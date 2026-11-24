@@ -21,6 +21,13 @@
   "id": "com.exponathan.exactbrowser",
   "start_url": "/",
   "display": "standalone",
+  "icons": [
+    {
+      "src": "assets/icon.png",
+      "sizes": "1024x1024",
+      "type": "image/png"
+    }
+  ],
   "app": {
     "id": "com.exponathan.exactbrowser",
     "name": "Exact Browser"
