@@ -1,0 +1,12 @@
+/target/
+/dist/
+/dist.*
+/dist-windows/
+/node_modules/
+/app.contract.d.ts
+/.exact/
+/.env.local
+/out.ipa
+/artifact.json
+/out.dSYM/
+/out.receipt.json
