@@ -4,6 +4,10 @@ on:
   push:
     branches: ['main']
 
+concurrency:
+  cancel_in_progress: false
+  group: ${{ workflow.filename }}
+
 jobs:
   build_ios:
     name: Build iOS
