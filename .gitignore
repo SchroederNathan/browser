@@ -6,3 +6,7 @@
 /app.contract.d.ts
 /.exact/
 /.env.local
+/out.ipa
+/artifact.json
+/out.dSYM/
+/out.receipt.json
