@@ -13,5 +13,10 @@
       },
       "ios": { "config": "eas-ios.yml", "image": "macos-tahoe-26.6-xcode-27.2" }
     }
+  },
+  "submit": {
+    "production": {
+      "ios": { "ascAppId": "6839385702" }
+    }
   }
 }

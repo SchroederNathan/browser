@@ -18,7 +18,7 @@
   "$schema": ".exact/checkout/scripts/app.schema.json",
   "name": "Exact Browser",
   "short_name": "Exact Browser",
-  "id": "com.exponathan.exactbrowser",
+  "id": "com.nate.exactbrowser",
   "start_url": "/",
   "display": "standalone",
   "icons": [
@@ -29,7 +29,7 @@
     }
   ],
   "app": {
-    "id": "com.exponathan.exactbrowser",
+    "id": "com.nate.exactbrowser",
     "name": "Exact Browser"
   },
   "hatches": {
