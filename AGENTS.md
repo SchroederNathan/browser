@@ -29,3 +29,22 @@ command confused you, record it: `bun exact.mjs feedback note "<what happened>"`
 exact2's commit and the last exit code, never output or code. `bun exact.mjs feedback status` says
 whether notes are sent and whether to keep a diary; under `never`, skip all of this.
 <!-- exact:end -->
+
+## Design system
+
+The design source is the Paper file "iOS Browser MVP". Its tokens are in `app.forma`, and its type,
+motion and surface styles are in `design.contract`. Name a token or a style; do not write a colour,
+a radius, a duration or a spring value in a view. Icons are SF Symbols: add one in `tools/icons.py`
+and run `python3 tools/icons.py`, which writes the icon tokens of `app.forma` and `assets/icons`.
+
+## Unbuilt controls
+
+`TODO.md` lists the controls that are on screen but do nothing yet. When you add one, or build one,
+change `TODO.md` in the same commit.
+
+## Design decisions (LLP)
+
+Design decisions are [LLP](https://github.com/ccheever/llp) documents in `llp/`. Start at
+`llp/0000-exact-browser.explainer.md`. Read the document that covers an area before you change it.
+A comment `@ref LLP NNNN#section` points from code to the decision it implements. When a decision
+changes, change its document in the same commit.

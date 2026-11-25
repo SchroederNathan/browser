@@ -1,24 +1,391 @@
-// Exact Browser: the view. app.ts answers what it asks for. Colours, fonts,
-// sizes and the safe area are left unsaid, so each platform supplies its own:
-// the header is the navigation bar, its heading the title, its button a bar item.
-shape Greeting
-  text: string
+// Exact Browser: the browser's chrome (Paper: "iOS Browser MVP"). A page fills the screen; the
+// bar's three glass surfaces sit over it and become the search sheet, the page menu and the tab
+// grid's controls. @ref LLP 0001
+use Icon from "./icons.contract"
+use hostOf, isAddress, addressOf, shortAddress from "./address.contract"
+use Tab, TabPage, newTab from "./tabs.contract"
+use SearchSheet, MenuSheet from "./sheets.contract"
+use Fly, SheetContent, Fade, BarGrow, BarSettle, PictureIn, PictureOut, BarFill, AddressIn, AddressOut, BesideLowercase, ScrimIn, ScrimOut, GridScreen, SegmentThumb, Bare from "./design.contract"
 
-routes nav
-  home "/"
+font "Inter"
+  100 900 = "assets/fonts/InterVariable.ttf"
+
+shape Segment
+  x: number
+  y: number
+  width: number
+  height: number
+
+shape Viewport
+  width: number
+  height: number
+  keyboardHeight: number
+  horizontalViewportSegments: number
+  segments: Segment[]
+  safeAreaTop: number
+  safeAreaBottom: number
+
+fn shotPath(id: string, n: number): string = `app:/cache/tab-${id}-${n % 2}.png`
 
 component ExactBrowser
-  resource greeting = greeting("Exact Browser") as shape Greeting
-  state liked = false
-  action like
-    liked = not liked
+  resource viewport = exactViewport() as shape Viewport
+
+  state tabs = [newTab("1", "https://expo.dev/", false, 1)]
+  state current = "1"
+  state nextId = 2
+  // What is behind the bar: a page, or the tab grid.
+  state screen = "browse"
+  // What the bar's middle surface has grown into: "none", "search" or "menu".
+  state sheet = "none"
+  // The search sheet is for a new tab.
+  state composing = false
+  state draft = ""
+  // What the person entered, the newest first: an address or the words of a search.
+  state recents = [] persist
+  // Sites' icons as "host address" pairs, the newest first.
+  state icons: string[] = [] persist
+  // The tab whose snapshot covers its page while it flies in from its card.
+  state landing = ""
+  // The tabs button was pressed, and the page's snapshot is being taken.
+  state leaving = false
+  // A page finished loading: its snapshot is due.
+  state snapDue = 0
+  // The tab grid's pager: the page it shows, and the offset it opens at.
+  state privatePage = false
+  state pagerStart = 0
+
+  // The screen, and the pane the controls sit in: the trailing half of a book fold, else all of it.
+  derive w = viewport.width
+  derive h = viewport.height
+  derive book = viewport.horizontalViewportSegments == 2
+  derive paneX = book ? (match viewport.segments.at(1) { case some(s) => s.x, case none => 0 }) : 0
+  derive paneW = book ? (match viewport.segments.at(1) { case some(s) => s.width, case none => w }) : w
+  // Regular: an unfolded iPhone Duo. The bar and the sheets float at a fixed width there.
+  derive regular = w >= 600
+  derive portrait = h >= w
+  derive keyboard = viewport.keyboardHeight >= 120 ? viewport.keyboardHeight : 336
+
+  derive open = sheet != "none"
+  derive inTabs = screen == "tabs"
+  derive active = first(tabs.filter(t => t.id == current))
+  derive url = match active { case some(t) => t.url, case none => "" }
+  derive activePrivate = match active { case some(t) => t.private, case none => privatePage }
+  derive recent = sortBy(tabs, t => t.seen, "desc")
+  derive regularTabs = tabs.filter(t => not t.private)
+  derive privateTabs = tabs.filter(t => t.private)
+  derive shownTabs = privatePage ? privateTabs : regularTabs
+
+  // The bar. @ref LLP 0001#bar-geometry
+  derive barW = regular ? 381 : w - 24
+  derive barX = regular ? paneX + (paneW - 381) / 2 : 12
+  derive barBottom = regular ? (portrait ? 32 : 24) : 34
+  derive sideSize = inTabs ? 52 : 48
+  derive sideBottom = inTabs ? 40 : barBottom
+  derive leftX = open ? -76 : inTabs ? paneX + 24 : barX
+  derive rightX = open ? w + 24 : inTabs ? paneX + paneW - 76 : barX + barW - 48
+  // The sheets. A compact sheet reaches 44 points below the screen so its four corners are one radius.
+  derive sheetW = regular ? 401 : w
+  derive sheetX = regular ? paneX + (paneW - 401) / 2 : 0
+  derive searchH = regular ? 320 : min(304 + keyboard, h - 118) + 44
+  derive menuH = regular ? min(633, h + 32) : min(640, h - 74) + 44
+  derive sheetBottom = regular ? (sheet == "search" ? keyboard - 40 : -48) : -44
+  derive midX = open ? sheetX : inTabs ? paneX + (paneW - 120) / 2 : barX + 58
+  derive midBottom = open ? sheetBottom : sideBottom
+  derive midW = open ? sheetW : inTabs ? 120 : barW - 116
+  derive midH = open ? (sheet == "search" ? searchH : menuH) : sideSize
+  derive sheetTop = max(0, h - midBottom - midH)
+  derive midRadius = open ? (regular ? 32 : 44) : sideSize / 2
+
+  // The tab grid. @ref LLP 0001#tab-grid
+  derive columns = regular ? (portrait ? 3 : 4) : 2
+  // Across a book fold the grid is two columns a side: the card after the hinge starts past it.
+  derive hinge = book ? paneX - (match first(viewport.segments) { case some(s) => s.width, case none => paneX }) : 0
+  // Each side keeps its 16-point margin; the grid's own 14-point gap is already between the cards.
+  derive hingeGap = book ? hinge + 18 : 0
+  derive cardW = floor((w - 32 - 14 * (columns - 1) - hingeGap) / columns)
+  derive previewH = round(cardW * h / w)
+  // The grid starts below the control: the status bar, 4 points, the control, 28 points.
+  derive gridTop = viewport.safeAreaTop + 80
+
+  task leave when leaving
+    after(300, showGrid)
+  task land when landing != "" key=landing
+    after(700, landed)
+  task snap when snapDue > 0 key=snapDue
+    after(900, snapPage)
+
+  // Pages.
+  action started(id: string, e: FrameNavigation)
+    tabs = tabs.map(t => t.id == id ? Tab(t, url=(e.url != "" ? e.url : t.url)) : t)
+  action moved(id: string, e: FrameNavigation)
+    tabs = tabs.map(t => t.id == id ? Tab(t, url=e.url, title=e.title, canGoBack=e.canGoBack, canGoForward=e.canGoForward) : t)
+  action arrived(id: string, e: FrameNavigation)
+    let icon = match first(e.icons) { case some(i) => i, case none => "" }
+    let host = hostOf(e.url)
+    let private = tabs.filter(t => t.id == id and t.private).length > 0
+    tabs = tabs.map(t => t.id == id ? Tab(t, url=e.url, title=e.title, icon=icon, canGoBack=e.canGoBack, canGoForward=e.canGoForward) : t)
+    // A private tab leaves no icon behind.
+    if icon != "" and not private
+      icons = [`${host} ${icon}`].concat(icons.filter(i => not i.startsWith(`${host} `))).slice(0, 80)
+    if id == current
+      snapDue = snapDue + 1
+  action captured(id: string, e: FrameCapture)
+    if e.error == ""
+      tabs = tabs.map(t => t.id == id ? Tab(t, shot=e.path, shots=t.shots + 1) : t)
+    if leaving
+      leaving = false
+      screen = "tabs"
+      privatePage = activePrivate
+      pagerStart = activePrivate ? 0 : w
+  action snapPage
+    snapDue = 0
+    if not inTabs and not open and not leaving
+      match active
+        case some(t)
+          captureScreenshot(`frame-${t.id}`, shotPath(t.id, t.shots + 1))
+        case none
+          snapDue = 0
+  action asked(e: FrameNewWindow)
+    let id = `${nextId}`
+    tabs = tabs.concat([newTab(id, e.url, activePrivate, performanceNow())])
+    nextId = nextId + 1
+    current = id
+
+  // The bar: each surface has one button, whose job follows the screen.
+  action pressLeft
+    if inTabs
+      if shownTabs.length > 0
+        showModal("close-all")
+    else
+      match active
+        case some(t)
+          leaving = true
+          captureScreenshot(`frame-${t.id}`, shotPath(t.id, t.shots + 1))
+        case none
+          screen = "tabs"
+          pagerStart = privatePage ? 0 : w
+  action showGrid
+    leaving = false
+    screen = "tabs"
+    privatePage = activePrivate
+    pagerStart = activePrivate ? 0 : w
+  action pressMiddle
+    composing = inTabs
+    draft = inTabs ? "" : url
+    sheet = "search"
+    focus("address")
+    selectText("address")
+  action pressRight
+    if inTabs
+      if current != ""
+        landing = current
+        screen = "browse"
+    else
+      sheet = "menu"
+  action closeSheet
+    blur()
+    sheet = "none"
+    composing = false
+
+  // The search sheet.
+  action edit(text: string)
+    draft = text
+  action fill(text: string)
+    draft = isAddress(text) ? shortAddress(text) : text
+    focus("address")
+  action submit
+    let text = draft.trim()
+    let private = composing ? privatePage : activePrivate
+    if text != ""
+      // A private tab leaves no recent entry behind.
+      if not private
+        recents = [isAddress(text) ? addressOf(text) : text].concat(recents.filter(r => r != text and r != addressOf(text))).slice(0, 12)
+      if composing or current == ""
+        let id = `${nextId}`
+        tabs = tabs.concat([newTab(id, addressOf(text), private, performanceNow())])
+        nextId = nextId + 1
+        current = id
+        screen = "browse"
+      else
+        navigate(`frame-${current}`, addressOf(text))
+      blur()
+      sheet = "none"
+      composing = false
+  action pick(entry: string)
+    let private = composing ? privatePage : activePrivate
+    if not private
+      recents = [entry].concat(recents.filter(r => r != entry)).slice(0, 12)
+    if composing or current == ""
+      let id = `${nextId}`
+      tabs = tabs.concat([newTab(id, addressOf(entry), private, performanceNow())])
+      nextId = nextId + 1
+      current = id
+      screen = "browse"
+    else
+      navigate(`frame-${current}`, addressOf(entry))
+    blur()
+    sheet = "none"
+    composing = false
+
+  // The page menu.
+  action goBack
+    traverseHistory(`frame-${current}`, -1)
+  action goForward
+    traverseHistory(`frame-${current}`, 1)
+  action reloadPage
+    reload(`frame-${current}`)
+    sheet = "none"
+  action copyLink
+    copyText(url)
+    haptic("success")
+    sheet = "none"
+  action closeCurrent
+    let rest = recent.filter(t => t.id != current and t.private == activePrivate)
+    tabs = tabs.filter(t => t.id != current)
+    current = match first(rest) { case some(t) => t.id, case none => "" }
+    sheet = "none"
+    if rest.length == 0
+      screen = "tabs"
+      privatePage = activePrivate
+      pagerStart = activePrivate ? 0 : w
+  // TODO(TODO.md): a control that is designed but does nothing yet.
+  action later
+    sheet = sheet
+
+  // The tab grid.
+  action paged(x: number, y: number)
+    privatePage = x < w / 2
+  action showPrivate
+    scrollIntoView("page-private", block="nearest", inline="start", behavior="smooth")
+  action showRegular
+    scrollIntoView("page-regular", block="nearest", inline="start", behavior="smooth")
+  action openTab(id: string)
+    tabs = tabs.map(t => t.id == id ? Tab(t, seen=performanceNow()) : t)
+    current = id
+    landing = id
+    screen = "browse"
+  action landed
+    landing = ""
+  action closeTab(id: string)
+    let rest = recent.filter(t => t.id != id and t.private == privatePage)
+    tabs = tabs.filter(t => t.id != id)
+    if id == current
+      current = match first(rest) { case some(t) => t.id, case none => "" }
+  action closeAll
+    tabs = tabs.filter(t => t.private != privatePage)
+    if activePrivate == privatePage
+      current = ""
+
   view
-    main testId="root" navigationKey=`${top(nav).id}` width="100%" height="100%"
-      for e in stack(nav) key=e.id
-        column navigationKey=`${e.id}` navigationScroll="content" position="absolute" inset=0 display="flex" flex-direction="column"
-          header display="flex" align-items="center"
-            text "Exact Browser" role="heading" aria-level=1 flex=1
-            button press=like aria-label=(liked ? "Unlike" : "Like") testId="like"
-              image (liked ? "symbol:heart-fill" : "symbol:heart")
-          scroll id="content" flex=1 min-height=0 padding=16
-            text greeting.text testId="greeting"
+    main testId="root" viewport-fit="cover" width="100%" height="100%" position="relative" overflow="hidden" font-family="Inter" color="color.text" background-color=(inTabs ? "color.surface" : "color.background") interactive-widget="overlays-content" status-bar-style=(inTabs ? "dark-content" : "auto")
+      // The data words tell the page's web view where the status bar ends and where the bar's
+      // top is, with 8 points of room: the page lays its fixed content out between those lines
+      // and still scrolls under both. @ref LLP 0001#page-insets
+      // Every tab's page stays mounted. The front one stays shown, under the grid too: showing a
+      // hidden frame again stalls. @ref LLP 0001#pages
+      for t in tabs key=t.id
+        iframe t.src id=`frame-${t.id}` hatch="page" data-top=`${viewport.safeAreaTop}` data-home=`${viewport.safeAreaBottom}` data-bar=`${barBottom + 56}` partition=(t.private ? "private" : "persist:browser") testId=`frame-${t.id}` title=t.title
+          position="absolute" left=0 top=0 width=w height=h border="none" display=(t.id == current ? "flex" : "none")
+          apple.allowsBackForwardNavigationGestures=true
+          navigate=started(t.id) currententrychange=moved(t.id) navigatesuccess=arrived(t.id) capture=captured(t.id) newwindow=asked
+
+      // The front page's place in the flight to and from its card. It shows the page's snapshot
+      // only while that flies in; then the live page is under it. @ref LLP 0001#tab-flights
+      if not inTabs
+        match active
+          case some(t)
+            if t.shot != ""
+              image t.shot sharedElement=`page-${t.id}` class=Fly position="absolute" left=0 top=0 width=w height=h object-fit="cover" object-position="top" alt="" pointer-events="none" opacity=(landing == t.id ? 1 : 0) testId="page-cover"
+            else
+              box sharedElement=`page-${t.id}` class=Fly position="absolute" left=0 top=0 width=w height=h pointer-events="none" testId="page-cover"
+          case none
+            box position="absolute" left=0 top=0 width=w height=h background-color="color.surface"
+
+      if inTabs
+        column position="absolute" left=0 top=0 width=w height=h background-color="color.surface" color-scheme="light" timeline-scope="--pager" class=GridScreen testId="grid"
+          // Private tabs and regular tabs are two pages: a swipe, or a press on the control,
+          // goes between them. @ref LLP 0001#tab-pager
+          scroll id="pager" position="absolute" left=0 top=0 width=w height=h display="flex" flex-direction="row" overflow-x="scroll" overflow-y="hidden" scroll-snap-type="x mandatory" scrollbar-width="none" scroll-timeline="--pager x" scrollLeft=pagerStart scroll=paged testId="pager"
+            TabPage(id="page-private", tabs=privateTabs, current=current, empty="No private tabs", width=w, height=h, top=gridTop, columns=columns, cardWidth=cardW, previewHeight=previewH, hingeGap=hingeGap, open=openTab, close=closeTab)
+            TabPage(id="page-regular", tabs=regularTabs, current=current, empty="No tabs", width=w, height=h, top=gridTop, columns=columns, cardWidth=cardW, previewHeight=previewH, hingeGap=hingeGap, open=openTab, close=closeTab)
+          box position="absolute" left=0 top=0 width=w height=(gridTop - 12) pointer-events="none" background-image="linear-gradient(0deg, rgba(245, 245, 245, 0) 0%, #f5f5f5 55%)"
+          // The control is 156 by 48 with its 4-point padding inside, so the thumb (72 by 40) has 4
+          // points on every side.
+          row position="absolute" left=((w - 156) / 2) top=(viewport.safeAreaTop + 4) width=156 height=48 box-sizing="border-box" padding=4 gap=4 align-items="center" border-radius="radius.full" background-color="color.surface-raised"
+            box class=SegmentThumb animation-range=`0px ${w}px`
+            button press=showPrivate class=Bare position="relative" width=72 height=44 margin="-2px 0px" display="flex" align-items="center" justify-content="center" border-radius="radius.full" aria-label="Private Tabs" aria-pressed=privatePage testId="private"
+              Icon(name="private", size=20, color=(privatePage ? "color.text" : "color.text-secondary"), weight=500)
+            button press=showRegular class=Bare position="relative" width=72 height=44 margin="-2px 0px" display="flex" align-items="center" justify-content="center" border-radius="radius.full" aria-label=`${regularTabs.length} ${regularTabs.length == 1 ? "tab" : "tabs"}` aria-pressed=(not privatePage) testId="regular"
+              row min-width=22 height=22 padding-left=3 padding-right=3 align-items="center" justify-content="center" border-radius=7 border-width=2 border-style="solid" border-color=(privatePage ? "color.text-secondary" : "color.text")
+                text `${regularTabs.length}` font-size=12 font-weight=700 color=(privatePage ? "color.text-secondary" : "color.text") testId="count"
+          box position="absolute" left=0 bottom=0 width=w height=132 pointer-events="none" background-image="linear-gradient(180deg, rgba(245, 245, 245, 0) 0%, #f5f5f5 45%)"
+
+      // Behind an open sheet the page is darker, and a press there closes the sheet.
+      // @ref LLP 0001#scrim
+      box class=(open ? ScrimIn : ScrimOut) aria-hidden=true testId="scrim-layer"
+      if open
+        button press=closeSheet class=Bare position="absolute" left=0 top=0 width=w height=sheetTop aria-label="Close" testId="scrim"
+        if regular
+          button press=closeSheet class=Bare position="absolute" left=0 top=sheetTop width=sheetX height=(h - sheetTop) aria-label="Close" testId="scrim-leading"
+          button press=closeSheet class=Bare position="absolute" left=(sheetX + sheetW) top=sheetTop width=(w - sheetX - sheetW) height=(h - sheetTop) aria-label="Close" testId="scrim-trailing"
+
+      // The bar's three glass surfaces. Each keeps its place in the tree through every state, so
+      // one spring carries it between them. @ref LLP 0001#one-spring
+      column class=(open ? BarGrow : BarSettle) color-scheme="light" position="absolute" left=leftX bottom=sideBottom width=sideSize height=sideSize border-radius=(sideSize / 2) -exact-glass-tint=(inTabs ? "glass.control" : "transparent") testId="bar-left-surface"
+        box class=BarFill background-color="color.surface-raised" opacity=(inTabs ? 0.7 : 0)
+        button press=pressLeft class=Bare position="absolute" left=0 top=0 width=sideSize height=sideSize aria-label=(inTabs ? "Close All Tabs" : "Tabs") testId="bar-left"
+          box class=(inTabs ? PictureOut : PictureIn)
+            // The two most recent tabs, the front one on top.
+            box width=26 height=26 position="relative"
+              box position="absolute" left=1 top=7 width=15 height=17 border-radius=4 rotate="-18deg" transform-origin="0% 0%" overflow="clip" background-color="thumbnail.behind"
+                match recent.at(1)
+                  case some(t)
+                    if t.shot != ""
+                      image t.shot width=15 height=17 object-fit="cover" object-position="top" alt="" opacity=0.85
+                  case none
+                    box
+              box position="absolute" left=9 top=1 width=15 height=17 border-radius=4 rotate="12deg" transform-origin="0% 0%" overflow="clip" background-color="paper-white" box-shadow="0 2px 4px rgba(0, 0, 0, 0.18)"
+                match recent.at(0)
+                  case some(t)
+                    if t.shot != ""
+                      image t.shot width=15 height=17 object-fit="cover" object-position="top" alt=""
+                  case none
+                    box
+          box class=(inTabs ? PictureIn : PictureOut)
+            Icon(name="close-all", size=19, color="color.text", weight=500)
+
+      column class=(open ? BarGrow : BarSettle) color-scheme="light" position="absolute" left=midX bottom=midBottom width=midW height=midH border-radius=midRadius overflow="clip" -exact-glass-tint=(open ? "glass.sheet" : inTabs ? "glass.accent" : "transparent") box-shadow=(open ? "0 -12px 40px rgba(40, 10, 30, 0.18)" : inTabs ? "0 6px 16px rgba(0, 0, 0, 0.16)" : "0 8px 24px rgba(40, 10, 20, 0.18)") testId="bar-middle-surface"
+        box class=BarFill background-color="color.accent" opacity=(inTabs and not open ? 0.8 : 0)
+        if sheet == "search"
+          column class=SheetContent position="absolute" left=0 top=0 width=sheetW
+            SearchSheet(draft=draft, recents=recents, icons=icons, edit=edit, submit=submit, pick=pick, fill=fill)
+        else if sheet == "menu"
+          column class=SheetContent position="absolute" left=0 top=0 width=sheetW
+            MenuSheet(canGoBack=(match active { case some(t) => t.canGoBack, case none => false }), canGoForward=(match active { case some(t) => t.canGoForward, case none => false }), goBack=goBack, goForward=goForward, copyLink=copyLink, reloadPage=reloadPage, closeTab=closeCurrent, later=later)
+        else
+          button press=pressMiddle class=Bare position="absolute" left=0 top=0 width=midW height=sideSize aria-label=(inTabs ? "New Tab" : `Address, ${hostOf(url)}`) testId="bar-middle"
+        // The address: centred in the pill and in the page menu's top row, and on its way to the
+        // field's text in the search sheet. @ref LLP 0001#address-flight
+        row position="absolute" left=(sheet == "search" ? 34 : open ? 16 : 0) top=(open ? 16 : 0) width=(sheet == "search" ? sheetW - 98 : open ? sheetW - 32 : midW) height=(open ? 52 : sideSize) align-items="center" justify-content=(sheet == "search" ? "flex-start" : "center") gap=6 pointer-events="none"
+          if not open and not inTabs and url != ""
+            box class=Fade display="flex"
+              box class=BesideLowercase
+                Icon(name=(url.startsWith("https://") ? "lock" : "unlock"), size=13, color="-exact-label", weight=600)
+          text (sheet == "menu" ? shortAddress(url) : hostOf(url)) class=(sheet == "search" or inTabs ? AddressOut : AddressIn) color=(sheet == "menu" ? "color.text" : "-exact-label") min-width=0 line-clamp=1 testId="address-label"
+        box class=(inTabs and not open ? PictureIn : PictureOut)
+          Icon(name="plus", size=20, color="color.on-accent", weight=600)
+
+      column class=(open ? BarGrow : BarSettle) color-scheme="light" position="absolute" left=rightX bottom=sideBottom width=sideSize height=sideSize border-radius=(sideSize / 2) -exact-glass-tint=(inTabs ? "glass.control" : "transparent") testId="bar-right-surface"
+        box class=BarFill background-color="color.surface-raised" opacity=(inTabs ? 0.7 : 0)
+        button press=pressRight class=Bare position="absolute" left=0 top=0 width=sideSize height=sideSize aria-label=(inTabs ? "Done" : "Page Menu") testId="bar-right"
+          box class=(inTabs ? PictureOut : PictureIn)
+            Icon(name="chevron-up", size=17, color="-exact-label", weight=600)
+          box class=(inTabs ? PictureIn : PictureOut)
+            Icon(name="checkmark", size=18, color="color.text", weight=600)
+
+      dialog id="close-all" role="alertdialog" aria-label=(shownTabs.length == 1 ? (privatePage ? "Close this private tab?" : "Close this tab?") : `Close all ${shownTabs.length} ${privatePage ? "private tabs" : "tabs"}?`)
+        text "This can’t be undone."
+        button press=closeAll destructive=true commandfor="close-all" command="close" testId="close-all-confirm"
+          text "Close All"
+        button commandfor="close-all" command="close" testId="close-all-cancel"
+          text "Cancel"

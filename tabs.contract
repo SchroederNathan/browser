@@ -1,0 +1,77 @@
+// A tab, its card, and one page of the tab grid (Paper: "04 Tab Grid"). @ref LLP 0001#tab-grid
+use Icon from "./icons.contract"
+use Favicon, hostOf, initial from "./address.contract"
+use Fly, Bare from "./design.contract"
+
+shape Tab
+  id: string
+  // The frame's first address. It never changes, so the frame keeps its page.
+  src: string
+  url: string
+  title: string
+  // The page's own icon, "" until the page names one.
+  icon: string
+  // The newest capture of the page under app:/cache, "" before the first.
+  shot: string
+  shots: number
+  // performanceNow() when the tab was last shown: the order of "most recent".
+  seen: number
+  canGoBack: bool
+  canGoForward: bool
+  // A private tab's frame is in a partition that is not kept.
+  private: bool
+
+fn newTab(id: string, address: string, private: bool, now: number): Tab = Tab(id=id, src=address, url=address, title="", icon="", shot="", shots=0, seen=now, canGoBack=false, canGoForward=false, private=private)
+fn nameOf(tab: Tab): string = tab.title != "" ? tab.title : hostOf(tab.url)
+fn iconOf(tab: Tab): string = tab.icon != "" ? tab.icon : `https://${hostOf(tab.url)}/favicon.ico`
+
+component TabCard
+  props
+    tab: Tab
+    selected: bool
+    width: number
+    previewHeight: number
+    open: action
+    close: action
+  view
+    // The preview has the screen's aspect ratio, so a page's snapshot lands in it uncropped.
+    column width=width height=(44 + previewHeight) flex-shrink=0 border-radius="radius.xl" overflow="clip" background-color="color.background" testId=`tab-${tab.id}`
+      box-shadow=(selected ? "0 0 0 3px #f5f5f5, 0 0 0 5px #171717" : "0 1px 3px rgba(0, 0, 0, 0.06)")
+      row height=44 flex-shrink=0 align-items="center" padding-left=12 border-bottom-width=(selected ? 0 : 1) border-bottom-style="solid" border-bottom-color="neutral-200"
+        button press=open(tab.id) class=Bare flex=1 min-width=0 height=44 display="flex" align-items="center" gap=8 aria-label=nameOf(tab) testId=`tab-open-${tab.id}`
+          Favicon(src=iconOf(tab), letter=initial(tab.url), size=18)
+          text nameOf(tab) font-size=14 font-weight=500 color="color.text" flex=1 min-width=0 text-align="left" line-clamp=1
+        button press=close(tab.id) class=Bare width=44 height=44 display="flex" align-items="center" justify-content="center" aria-label=`Close ${nameOf(tab)}` testId=`tab-close-${tab.id}`
+          Icon(name="close", size=12, color="color.text-secondary", weight=700)
+      button press=open(tab.id) class=Bare width=width height=previewHeight flex-shrink=0 aria-label=nameOf(tab) testId=`tab-preview-${tab.id}`
+        if tab.shot != ""
+          image tab.shot sharedElement=`page-${tab.id}` class=Fly width=width height=previewHeight object-fit="cover" object-position="top" alt=""
+        else
+          box sharedElement=`page-${tab.id}` class=Fly width=width height=previewHeight background-color="color.background"
+
+// One page of the pager: the regular tabs, or the private ones. @ref LLP 0001#tab-pager
+component TabPage
+  props
+    id: string
+    tabs: Tab[]
+    current: string
+    empty: string
+    width: number
+    height: number
+    top: number
+    columns: number
+    cardWidth: number
+    previewHeight: number
+    // Across a book fold, the room the first card after the hinge leaves for it.
+    hingeGap: number
+    open: action
+    close: action
+  view
+    scroll id=id width=width height=height flex-shrink=0 scroll-snap-align="start" scroll-snap-stop="always" testId=id
+      column width=width padding-top=top padding-bottom=148
+        if tabs.length == 0
+          text empty font-size=17 font-weight=500 letter-spacing="-0.01em" color="neutral-600" text-align="center" padding-top=96 testId=`${id}-empty`
+        row flex-wrap="wrap" padding-left=16 padding-right=16 column-gap=14 row-gap=16
+          for t, i in tabs key=t.id
+            box margin-left=(hingeGap > 0 and i % columns == columns / 2 ? hingeGap : 0)
+              TabCard(tab=t, selected=(t.id == current), width=cardWidth, previewHeight=previewHeight, open=open, close=close)

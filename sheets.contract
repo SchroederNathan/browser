@@ -1,0 +1,119 @@
+// The two sheets the bar's middle surface grows into (Paper: "02 Search", "03 Page Menu").
+// @ref LLP 0001#sheets
+use Icon from "./icons.contract"
+use Favicon, hostOf, initial, isAddress, shortAddress, faviconOf from "./address.contract"
+use TypeBase, TypeXs, Group, Bare from "./design.contract"
+
+component SearchSheet
+  props
+    draft: string
+    // What the person entered before, the newest first: an address or the words of a search.
+    recents: string[]
+    icons: string[]
+    edit: action
+    submit: action
+    pick: action
+    fill: action
+  view
+    column padding-top="space-4" padding-left="space-4" padding-right="space-4" gap=14 testId="search-sheet"
+      row height=52 flex-shrink=0 align-items="center" gap="space-1" padding-left=18 padding-right="space-2" border-radius="radius.full" background-color="color.surface-raised" box-shadow="inset 0 0 0 1.5px #a3a3a3"
+        input id="address" value=draft input=edit submit=submit
+          placeholder="Search or enter address" aria-label="Search or enter address" testId="address"
+          flex=1 min-width=0 border="none" background-color="transparent" color="color.text" caret-color="color.accent"
+          font-size=17 font-weight=500 letter-spacing="-0.01em"
+          inputmode="url" enterkeyhint="go" autocapitalize="none" autocorrect="off" spellcheck=false autofocus=true
+        // TODO(TODO.md#voice-search): start dictation.
+        button class=Bare width=40 height=40 display="flex" align-items="center" justify-content="center" aria-label="Voice Search" testId="voice"
+          Icon(name="microphone", size=18, color="color.text-secondary", weight=500)
+      if recents.length > 0
+        column flex-shrink=0 padding-left=6 padding-right=6
+          for r in recents.slice(0, 4) key=r
+            row height=44 align-items="center" gap=14
+              button press=pick(r) class=Bare flex=1 min-width=0 height=44 display="flex" align-items="center" gap=14 testId=`recent-${r}`
+                // A page shows its site's icon; a search shows the search symbol.
+                row width=22 justify-content="center" flex-shrink=0
+                  if isAddress(r)
+                    Favicon(src=faviconOf(icons, hostOf(r)), letter=initial(r), size=20)
+                  else
+                    Icon(name="search", size=16, color="color.text-secondary", weight=600)
+                text (isAddress(r) ? shortAddress(r) : r) class=TypeBase color="color.text" flex=1 min-width=0 text-align="left" line-clamp=1
+              button press=fill(r) class=Bare width=32 height=44 display="flex" align-items="center" justify-content="flex-end" aria-label=`Edit ${isAddress(r) ? shortAddress(r) : r}` testId=`recent-fill-${r}`
+                Icon(name="arrow-up-right", size=14, color="color.text-disabled", weight=600)
+
+component MenuRow
+  props
+    icon: string
+    label: string
+    last: bool
+    danger: bool
+    press: action
+    id: string
+  view
+    button press=press class=Bare height=54 display="flex" align-items="center" gap=14 padding-left=18 padding-right=18 border-bottom-width=(last ? 0 : 1) border-bottom-style="solid" border-bottom-color="color.border" testId=id
+      row width=24 justify-content="center" flex-shrink=0
+        // The laptop symbol is wider than the others, so it is drawn smaller to fit the icon column.
+        Icon(name=icon, size=(icon == "desktop" ? 14 : 18), color=(danger ? "color.danger" : "color.text"), weight=500)
+      text label class=TypeBase color=(danger ? "color.danger" : "color.text") flex=1 text-align="left"
+
+component MenuTile
+  props
+    icon: string
+    label: string
+    press: action
+    id: string
+  view
+    button press=press class=Bare flex=1 min-width=0 display="flex" flex-direction="column" align-items="center" gap="space-2" testId=id
+      column width="100%" height=80 align-items="center" justify-content="center" border-radius="radius.xl" background-color="color.surface-raised"
+        Icon(name=icon, size=22, color="color.text", weight=500)
+      text label class=TypeXs color="color.text-secondary"
+
+component MenuSheet
+  props
+    canGoBack: bool
+    canGoForward: bool
+    goBack: action
+    goForward: action
+    copyLink: action
+    reloadPage: action
+    closeTab: action
+    later: action
+  view
+    column padding-top="space-4" padding-left="space-4" padding-right="space-4" gap=18 testId="menu-sheet"
+      row height=52 flex-shrink=0 align-items="center" padding-left="space-2" padding-right="space-2" border-radius="radius.full" background-color="color.surface-raised"
+        button press=goBack disabled=(not canGoBack) class=Bare width=40 height=40 display="flex" align-items="center" justify-content="center" aria-label="Back" testId="menu-back"
+          Icon(name="back", size=17, color=(canGoBack ? "color.text" : "color.text-disabled"), weight=600)
+        button press=goForward disabled=(not canGoForward) class=Bare width=40 height=40 display="flex" align-items="center" justify-content="center" aria-label="Forward" testId="menu-forward"
+          Icon(name="forward", size=17, color=(canGoForward ? "color.text" : "color.text-disabled"), weight=600)
+        // The address is the bar's own text, flown here (app.contract).
+        box flex=1 min-width=0
+        button press=copyLink class=Bare width=40 height=40 display="flex" align-items="center" justify-content="center" aria-label="Copy Link" testId="menu-copy"
+          Icon(name="link", size=17, color="color.text", weight=500)
+        button press=reloadPage class=Bare width=40 height=40 display="flex" align-items="center" justify-content="center" aria-label="Reload" testId="menu-reload"
+          Icon(name="reload", size=17, color="color.text", weight=500)
+      // TODO(TODO.md#page-menu): these four do nothing yet.
+      row flex-shrink=0 gap="space-3"
+        MenuTile(icon="find", label="Find on Page", press=later, id="menu-find")
+        MenuTile(icon="sparkles", label="Summarize", press=later, id="menu-summarize")
+        MenuTile(icon="pin", label="Pin Tab", press=later, id="menu-pin")
+        MenuTile(icon="share", label="Share", press=later, id="menu-share")
+      // TODO(TODO.md#page-menu): Reader Mode, Translate, Page Zoom and Request Desktop Site do nothing yet.
+      column flex-shrink=0 class=Group
+        MenuRow(icon="reader", label="Reader Mode", last=false, danger=false, press=later, id="menu-reader")
+        MenuRow(icon="globe", label="Translate", last=false, danger=false, press=later, id="menu-translate")
+        row height=54 align-items="center" gap=14 padding-left=18 padding-right=10 border-bottom-width=1 border-bottom-style="solid" border-bottom-color="color.border"
+          row width=24 justify-content="center" flex-shrink=0
+            Icon(name="text-size", size=17, color="color.text", weight=500)
+          text "Page Zoom" class=TypeBase color="color.text" flex=1
+          row height=36 align-items="center" border-radius="radius.md" background-color="neutral-50"
+            text "100%" width=56 text-align="center" font-size=15 font-weight=500 color="color.text-secondary" testId="menu-zoom"
+            box width=1 height=18 background-color="color.border"
+            button press=later class=Bare width=40 height=36 display="flex" align-items="center" justify-content="center" aria-label="Zoom Out" testId="menu-zoom-out"
+              Icon(name="minus", size=14, color="color.text", weight=600)
+            box width=1 height=18 background-color="color.border"
+            button press=later class=Bare width=40 height=36 display="flex" align-items="center" justify-content="center" aria-label="Zoom In" testId="menu-zoom-in"
+              Icon(name="plus", size=14, color="color.text", weight=600)
+        MenuRow(icon="desktop", label="Request Desktop Site", last=true, danger=false, press=later, id="menu-desktop")
+      column flex-shrink=0 class=Group
+        // TODO(TODO.md#page-menu): Site Settings does nothing yet.
+        MenuRow(icon="sliders", label="Site Settings", last=false, danger=false, press=later, id="menu-settings")
+        MenuRow(icon="close-circle", label="Close Tab", last=true, danger=true, press=closeTab, id="menu-close-tab")
