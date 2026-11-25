@@ -1,0 +1,32 @@
+// Addresses: what the person typed, what a tab shows, and a site's icon.
+
+fn withoutScheme(url: string): string = url.replaceAll("https://", "").replaceAll("http://", "")
+fn withoutWww(host: string): string = host.startsWith("www.") ? host.slice(4) : host
+fn withoutQuery(address: string): string = match first(address.split("?")) { case some(a) => a, case none => "" }
+fn withoutSlash(address: string): string = address.endsWith("/") ? address.slice(0, address.length - 1) : address
+fn hostOf(url: string): string = withoutWww(match first(withoutScheme(url).split("/")) { case some(h) => h, case none => "" })
+fn initial(url: string): string = hostOf(url).slice(0, 1).toUpperCase()
+// "https://www.expo.dev/home?x=1" reads "expo.dev/home".
+fn shortAddress(url: string): string = withoutSlash(withoutQuery(withoutWww(withoutScheme(url))))
+// Text with a dot and no space is an address; any other text is a search.
+fn isAddress(text: string): bool = text.startsWith("http://") or text.startsWith("https://") or (not text.includes(" ") and text.includes("."))
+fn addressOf(text: string): string = text.startsWith("http://") or text.startsWith("https://") ? text : isAddress(text) ? `https://${text}` : `https://www.google.com/search?q=${encodeURIComponent(text)}`
+// `icons` holds "host address" pairs, the newest first. A site not seen yet answers its /favicon.ico.
+fn faviconOf(icons: string[], host: string): string = match first(icons.filter(i => i.startsWith(`${host} `))) { case some(i) => i.slice(host.length + 1), case none => `https://${host}/favicon.ico` }
+
+// A site's icon over the first letter of its host, which shows until the icon loads.
+component Favicon
+  props
+    src: string
+    letter: string
+    size: number
+  state loaded = false
+  action shown
+    loaded = true
+  view
+    box width=size height=size position="relative" flex-shrink=0 border-radius=(size * 0.28) overflow="clip"
+      if not loaded
+        column position="absolute" left=0 top=0 width=size height=size align-items="center" justify-content="center" background-color="neutral-900"
+          text letter font-size=(size * 0.55) font-weight=700 color="paper-white"
+      // Until it loads, the icon is one point and clear, so it does not cover the letter.
+      image src load=shown position="absolute" left=0 top=0 width=(loaded ? size : 1) height=(loaded ? size : 1) opacity=(loaded ? 1 : 0) object-fit="cover" alt=""

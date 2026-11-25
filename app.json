@@ -31,5 +31,65 @@
   "app": {
     "id": "com.exponathan.exactbrowser",
     "name": "Exact Browser"
-  }
+  },
+  "hatches": {
+    "page": [
+      "ios",
+      "web"
+    ]
+  },
+  "verify": {
+    "accept": [
+      {
+        "finding": "target",
+        "node": "menu-copy",
+        "why": "The Paper design draws this control at this size inside a 52-point row."
+      },
+      {
+        "finding": "target",
+        "node": "menu-reload",
+        "why": "The Paper design draws this control at this size inside a 52-point row."
+      },
+      {
+        "finding": "target",
+        "node": "menu-zoom-out",
+        "why": "The Paper design draws the Page Zoom stepper 36 points high."
+      },
+      {
+        "finding": "target",
+        "node": "menu-zoom-in",
+        "why": "The Paper design draws the Page Zoom stepper 36 points high."
+      },
+      {
+        "finding": "contrast",
+        "node": "menu-close-tab",
+        "why": "The Paper design system's danger colour (red-600) on its raised surface (neutral-200). TODO.md lists it."
+      },
+      {
+        "finding": "contrast",
+        "node": "menu-find",
+        "why": "The Paper design system's secondary text (neutral-500) on its sheet surface (neutral-100), measured through glass."
+      },
+      {
+        "finding": "contrast",
+        "node": "menu-summarize",
+        "why": "The Paper design system's secondary text (neutral-500) on its sheet surface (neutral-100), measured through glass."
+      },
+      {
+        "finding": "contrast",
+        "node": "menu-pin",
+        "why": "The Paper design system's secondary text (neutral-500) on its sheet surface (neutral-100), measured through glass."
+      },
+      {
+        "finding": "contrast",
+        "node": "menu-share",
+        "why": "The Paper design system's secondary text (neutral-500) on its sheet surface (neutral-100), measured through glass."
+      }
+    ]
+  },
+  "data": [
+    "bar",
+    "home",
+    "top"
+  ]
 }
