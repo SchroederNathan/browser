@@ -1,8 +1,8 @@
 module.exports = {
   name: 'Exact Browser',
-  slug: 'exact-browser',
+  slug: 'browser',
   owner: 'exponathan',
   version: process.env.EXACT_VERSION || '1.0.0',
   ios: { bundleIdentifier: 'com.exponathan.exactbrowser' },
-  extra: { eas: { projectId: 'fad00826-e86b-4ab6-a075-10d8dc688291' } },
+  extra: { eas: { projectId: 'e8248b92-6d6f-468b-8d22-529efaa96f1c' } },
 };
