@@ -1,0 +1,11 @@
+// An icon of the Browser Design System. `name` is an icon token of app.forma (`icon.<name>`): an
+// SF Symbol on Apple, the design's own path elsewhere. tools/icons.py writes the tokens.
+// `size` is the symbol's point size, as a font size, and `weight` its font weight.
+component Icon
+  props
+    name: string
+    size: number
+    color: string
+    weight: number
+  view
+    image `symbol:icon.${name}` font-size=size font-weight=weight color=color aria-hidden=true flex-shrink=0

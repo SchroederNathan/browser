@@ -1,7 +1,125 @@
-test "the greeting loads"
-  expect tree has "root"
-  expect text "greeting" == "Hello from Exact Browser."
+// The browser's chrome: the bar, its two sheets and the tab grid.
+test "the address pill opens the search sheet on the page's address"
+  expect state sheet == "none"
+  tap "bar-middle"
+  expect state sheet == "search"
+  expect state composing == false
+  expect state draft == "https://expo.dev/"
+  expect focused "address"
+  tap "scrim"
+  expect state sheet == "none"
 
-test "the header's button likes it"
-  tap "like"
-  expect state liked == true
+test "the chevron opens the page menu, and a press beside it closes it"
+  tap "bar-right"
+  expect state sheet == "menu"
+  expect tree has "menu-summarize"
+  tap "scrim"
+  expect state sheet == "none"
+  expect tree missing "menu-summarize"
+
+test "a control that is not built yet changes nothing"
+  tap "bar-right"
+  clock settle
+  tap "menu-summarize"
+  expect state sheet == "menu"
+  expect state tabs.length == 1
+
+test "the tabs button shows the grid, and Done returns to the page"
+  tap "bar-left"
+  clock +400
+  clock settle
+  expect state screen == "tabs"
+  expect text "count" == "1"
+  expect tree has "tab-1"
+  tap "bar-right"
+  expect state screen == "browse"
+  expect state landing == "1"
+  clock +800
+  expect state landing == ""
+
+test "the plus button opens the search sheet for a new tab"
+  tap "bar-left"
+  clock +400
+  clock settle
+  tap "bar-middle"
+  expect state sheet == "search"
+  expect state composing == true
+  expect state draft == ""
+  type "address" "example.com"
+  type "address" key "Enter"
+  expect state sheet == "none"
+  expect state screen == "browse"
+  expect state tabs.length == 2
+  expect state tabs.1.url == "https://example.com"
+  expect state current == "2"
+
+test "words in the field search, and are kept as a recent search"
+  tap "bar-middle"
+  type "address" "expo router native tabs"
+  type "address" key "Enter"
+  expect state recents == ["expo router native tabs"]
+  expect state sheet == "none"
+
+test "an address in the field is kept as a recent page, and a recent entry opens again"
+  tap "bar-middle"
+  type "address" "example.com"
+  type "address" key "Enter"
+  expect state recents == ["https://example.com"]
+  tap "bar-middle"
+  clock settle
+  tap "recent-https://example.com"
+  expect state sheet == "none"
+  expect state recents == ["https://example.com"]
+
+test "the control above the grid pages between private tabs and tabs"
+  tap "bar-left"
+  clock +400
+  clock settle
+  expect state privatePage == false
+  tap "private"
+  clock settle
+  expect state privatePage == true
+  expect tree has "page-private-empty"
+  tap "bar-middle"
+  type "address" "example.org"
+  type "address" key "Enter"
+  expect state tabs.1.private == true
+  expect state recents == []
+  tap "bar-left"
+  clock +400
+  clock settle
+  expect state privatePage == true
+  expect text "count" == "1"
+  tap "regular"
+  clock settle
+  expect state privatePage == false
+
+test "closing all tabs asks first"
+  tap "bar-left"
+  clock +400
+  clock settle
+  tap "bar-left"
+  clock settle
+  tap "close-all-cancel"
+  expect state tabs.length == 1
+  tap "bar-left"
+  clock settle
+  tap "close-all-confirm"
+  expect state tabs == []
+  expect state current == ""
+  expect text "count" == "0"
+
+test "a tab's close button closes it"
+  tap "bar-left"
+  clock +400
+  clock settle
+  tap "tab-close-1"
+  expect state tabs == []
+
+test "Close Tab in the page menu closes the page and shows the grid"
+  tap "bar-right"
+  clock settle
+  tap "menu-close-tab"
+  expect state tabs == []
+  expect state sheet == "none"
+  expect state screen == "tabs"

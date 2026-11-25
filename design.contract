@@ -1,0 +1,203 @@
+// The Browser Design System in code (Paper: "Browser Design System", Tailwind neutral, Inter, v0.1).
+// Colours, radii, spacing and icons are tokens in app.forma; type, motion and the shared surfaces
+// are the styles here. @ref LLP 0001#design-system
+
+// Type — Inter.
+style TypeDisplay
+  font-size=48
+  line-height="50px"
+  font-weight=700
+  letter-spacing="-0.035em"
+
+style TypeLg
+  font-size=20
+  font-weight=700
+
+style TypeBase
+  font-size=17
+  font-weight=500
+  letter-spacing="-0.01em"
+
+style TypeSm
+  font-size=13
+  font-weight=600
+  letter-spacing="0.08em"
+  text-transform="uppercase"
+
+style TypeXs
+  font-size=12
+  font-weight=500
+
+// An icon beside lowercase text (an address). A row centres the icon on the text's line box,
+// which is the middle of its capitals; lowercase letters sit lower, so the icon moves down to
+// their middle. @ref LLP 0001#optical-alignment
+style BesideLowercase
+  display="flex"
+  translate="0px 1px"
+
+// Motion. @ref LLP 0001#motion
+//
+// Duration follows size: a small thing (an icon, a label) takes 150 to 220 ms, and a surface takes
+// a spring of about 400 ms. An entrance is longer than its exit. Entrances and exits ease out, on
+// cubic-bezier(0.22, 1, 0.36, 1), which starts fast and settles slowly. A surface that morphs
+// takes a spring with a small bounce. A small thing may scale from 0.9; content in a sheet moves
+// 8 points and does not scale.
+
+// The bar's three glass surfaces. One spring moves all of them: the middle surface as it grows
+// into a sheet, and the side buttons as they leave the screen. A surface grows with a small
+// bounce and returns faster with none. @ref LLP 0001#one-spring @ref LLP 0001#liquid-glass
+style BarGrow
+  backgroundMaterial="glass"
+  border-width=0
+  -exact-layout-transition="-exact-spring(300, 30, 1)"
+
+style BarSettle
+  backgroundMaterial="glass"
+  border-width=0
+  -exact-layout-transition="-exact-spring(420, 41, 1)"
+
+// A snapshot of a page flying between the screen and its card. It is the largest thing that
+// moves, so its spring is the slowest and has almost no bounce. @ref LLP 0001#tab-flights
+style Fly
+  -exact-layout-transition="-exact-spring(260, 30, 1)"
+
+// A picture on a surface of the bar (an icon, the plus). When the surface changes its job, the
+// old picture blurs out as the new one blurs in. A blur animates only as a transition, so both
+// stay mounted and trade places.
+style PictureIn
+  position="absolute"
+  left=0
+  top=0
+  width="100%"
+  height="100%"
+  display="flex"
+  align-items="center"
+  justify-content="center"
+  pointer-events="none"
+  opacity=1
+  filter="blur(0px)"
+  scale=1
+  transition="opacity 220ms cubic-bezier(0.22, 1, 0.36, 1), filter 220ms cubic-bezier(0.22, 1, 0.36, 1), scale 220ms cubic-bezier(0.22, 1, 0.36, 1)"
+
+style PictureOut
+  position="absolute"
+  left=0
+  top=0
+  width="100%"
+  height="100%"
+  display="flex"
+  align-items="center"
+  justify-content="center"
+  pointer-events="none"
+  opacity=0
+  filter="blur(6px)"
+  scale=0.9
+  transition="opacity 150ms ease-out, filter 150ms ease-out, scale 150ms ease-out"
+
+// A flat fill over a bar surface's glass, for a state the design draws as a solid colour.
+style BarFill
+  position="absolute"
+  left=0
+  top=0
+  width="100%"
+  height="100%"
+  pointer-events="none"
+  transition="opacity 220ms ease-out"
+
+// The address in the bar. It is one text through every state, so the bar's spring carries it
+// from the pill to its place in a sheet. @ref LLP 0001#address-flight
+style AddressIn
+  font-size=17
+  font-weight=500
+  letter-spacing="-0.01em"
+  -exact-layout-transition="-exact-spring(300, 30, 1)"
+  opacity=1
+  filter="blur(0px)"
+  transition="opacity 220ms cubic-bezier(0.22, 1, 0.36, 1), filter 220ms cubic-bezier(0.22, 1, 0.36, 1), color 220ms ease-out"
+
+style AddressOut
+  font-size=17
+  font-weight=500
+  letter-spacing="-0.01em"
+  -exact-layout-transition="-exact-spring(300, 30, 1)"
+  opacity=0
+  filter="blur(6px)"
+  transition="opacity 150ms ease-out, filter 150ms ease-out, color 150ms ease-out"
+
+keyframes fade-in
+  from opacity=0
+keyframes fade-out
+  to opacity=0
+keyframes rise-in
+  from opacity=0 translate="0px 8px"
+
+// A sheet's content. It waits a moment for its surface, rises 8 points as it fades in, and
+// leaves at once.
+style SheetContent
+  animation="rise-in 300ms 40ms cubic-bezier(0.22, 1, 0.36, 1) both"
+  -exact-exit-animation="fade-out 120ms ease-out both"
+
+style Fade
+  animation="fade-in 200ms cubic-bezier(0.22, 1, 0.36, 1) both"
+  -exact-exit-animation="fade-out 120ms ease-out both"
+
+// The layer between the page and an open sheet: it darkens the page, so the sheet reads as
+// above it. It does not blur. @ref LLP 0001#scrim
+style ScrimIn
+  position="absolute"
+  left=0
+  top=0
+  width="100%"
+  height="100%"
+  background-color="scrim.tint"
+  opacity=1
+  pointer-events="none"
+  transition="opacity 300ms cubic-bezier(0.22, 1, 0.36, 1)"
+
+style ScrimOut
+  position="absolute"
+  left=0
+  top=0
+  width="100%"
+  height="100%"
+  background-color="scrim.tint"
+  opacity=0
+  pointer-events="none"
+  transition="opacity 200ms ease-out"
+
+// The tab grid stays until the snapshot that flies out of it covers the screen.
+keyframes hold-then-fade
+  70% opacity=1
+  to opacity=0
+
+style GridScreen
+  -exact-exit-animation="hold-then-fade 420ms linear both"
+
+// The white thumb of the control above the tab grid. It follows the pager's scroll: one page
+// of scroll moves it one segment (72 points and the 4-point gap). @ref LLP 0001#tab-pager
+keyframes thumb-slide
+  to translate="76px 0px"
+
+style SegmentThumb
+  position="absolute"
+  left=4
+  top=4
+  width=72
+  height=40
+  border-radius="radius.full"
+  background-color="color.background"
+  box-shadow="0 1px 3px rgba(0, 0, 0, 0.08)"
+  animation="thumb-slide 1s linear both"
+  animation-timeline="--pager"
+
+// A raised group of controls inside a sheet.
+style Group
+  border-radius="radius.xl"
+  background-color="color.surface-raised"
+  overflow="clip"
+
+// A control with no chrome of its own: the surface around it is the control.
+style Bare
+  border-width=0
+  background-color="transparent"
+  padding=0

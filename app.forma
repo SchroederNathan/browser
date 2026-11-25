@@ -1,0 +1,88 @@
+forma browser
+
+// The Browser Design System (Paper, v0.1): Tailwind neutral, Inter.
+// The design has one scheme, so every colour is fixed until a dark theme is designed.
+theme
+  // Palette: neutral
+  neutral-50 = #fafafa  scheme=fixed
+  neutral-100 = #f5f5f5  scheme=fixed
+  neutral-200 = #e5e5e5  scheme=fixed
+  neutral-300 = #d4d4d4  scheme=fixed
+  neutral-400 = #a3a3a3  scheme=fixed
+  neutral-500 = #737373  scheme=fixed
+  neutral-600 = #525252  scheme=fixed
+  neutral-700 = #404040  scheme=fixed
+  neutral-800 = #262626  scheme=fixed
+  neutral-900 = #171717  scheme=fixed
+  neutral-950 = #0a0a0a  scheme=fixed
+  red-600 = #dc2626  scheme=fixed
+  paper-white = #ffffff  scheme=fixed
+
+  // Semantic roles
+  color.background = paper-white
+  color.surface = neutral-100
+  color.surface-raised = neutral-200
+  color.border = neutral-300
+  color.text-disabled = neutral-400
+  color.text-secondary = neutral-500
+  color.text = neutral-900
+  color.accent = neutral-900
+  color.on-accent = paper-white
+  color.danger = red-600
+
+  // Radius
+  radius.sm = 8px
+  radius.md = 12px
+  radius.lg = 16px
+  radius.xl = 22px
+  radius.sheet = 44px
+  radius.full = 999px
+
+  // Spacing
+  space-1 = 4px
+  space-2 = 8px
+  space-3 = 12px
+  space-4 = 16px
+  space-5 = 20px
+  space-6 = 24px
+  space-8 = 32px
+
+  // Liquid Glass tints. The design draws the sheets and controls as flat fills; on glass, each
+  // fill is the glass's tint at an alpha that lets the page through.
+  glass.bar = rgb(255 255 255 / 0.18)  scheme=fixed
+  glass.sheet = rgb(245 245 245 / 0.78)  scheme=fixed
+  glass.control = rgb(229 229 229 / 0.7)  scheme=fixed
+  glass.accent = rgb(23 23 23 / 0.88)  scheme=fixed
+  // The tab behind the front one in the tabs button.
+  thumbnail.behind = rgb(255 255 255 / 0.55)  scheme=fixed
+  // The dark wash over the page behind an open sheet.
+  scrim.tint = rgb(0 0 0 / 0.32)  scheme=fixed
+
+icons
+  // Written by tools/icons.py: an SF Symbol on Apple, the design's own path elsewhere.
+  icon.lock = icon(sf "lock.fill", svg "icons/lock.svg")
+  icon.unlock = icon(sf "lock.open.fill", svg "icons/unlock.svg")
+  icon.chevron-up = icon(sf "chevron.up", svg "icons/chevron-up.svg")
+  icon.microphone = icon(sf "mic", svg "icons/microphone.svg")
+  icon.search = icon(sf "magnifyingglass", svg "icons/search.svg")
+  icon.arrow-up-right = icon(sf "arrow.up.right", svg "icons/arrow-up-right.svg")
+  icon.back = icon(sf "chevron.left", svg "icons/back.svg")
+  icon.forward = icon(sf "chevron.right", svg "icons/forward.svg")
+  icon.link = icon(sf "link", svg "icons/link.svg")
+  icon.reload = icon(sf "arrow.clockwise", svg "icons/reload.svg")
+  icon.find = icon(sf "doc.text.magnifyingglass", svg "icons/find.svg")
+  icon.sparkles = icon(sf "sparkles", svg "icons/sparkles.svg")
+  icon.pin = icon(sf "pin.fill", svg "icons/pin.svg")
+  icon.share = icon(sf "square.and.arrow.up", svg "icons/share.svg")
+  icon.reader = icon(sf "doc.plaintext", svg "icons/reader.svg")
+  icon.globe = icon(sf "globe", svg "icons/globe.svg")
+  icon.text-size = icon(sf "textformat.size", svg "icons/text-size.svg")
+  icon.desktop = icon(sf "laptopcomputer", svg "icons/desktop.svg")
+  icon.sliders = icon(sf "slider.horizontal.3", svg "icons/sliders.svg")
+  icon.close-circle = icon(sf "xmark.circle", svg "icons/close-circle.svg")
+  icon.private = icon(sf "eyeglasses", svg "icons/private.svg")
+  icon.close = icon(sf "xmark", svg "icons/close.svg")
+  icon.close-all = icon(sf "xmark.square", svg "icons/close-all.svg")
+  icon.plus = icon(sf "plus", svg "icons/plus.svg")
+  icon.minus = icon(sf "minus", svg "icons/minus.svg")
+  icon.checkmark = icon(sf "checkmark", svg "icons/checkmark.svg")
