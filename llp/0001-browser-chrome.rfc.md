@@ -70,6 +70,8 @@ These come from the request of 2026-11-26. `[confirmed]` Nathan Schroeder, 2026-
     way to the field's own control.
 25. A pull down closes a sheet. A press beside the sheet still closes it.
 26. The bar is over the page at every moment of the flight between a page and its card.
+27. A page shows under the bar as it scrolls, also when the page has a fixed bar or a toast at its
+    bottom edge.
 
 ## Design system
 
@@ -330,6 +332,20 @@ are the safe area, and `data-bar` is the bar's top plus 8 points, from the botto
 content passes under the bar.
 
 *Agent decision.* Before iOS 26 only the scroll insets apply, so fixed content stays under the bar.
+
+A page shows under the bar on every page (requirement 27). `[observed]` When a page has a fixed
+bar along its whole bottom edge, WebKit paints that bar's colour over the covered strip below it:
+a `WKColorExtensionView` in the scroll view, as tall as the bottom inset. The page then did not
+show under the browser's bar. A fixed toast that does not reach both sides did not cause it.
+`[observed]` WebKit's symbols have no public switch for the strip; the only setter is the private
+`_setShouldSuppressTopColorExtensionView:`.
+
+*Agent decision.* The hatch gives the strip's view an empty mask when WebKit adds it. It finds the
+view by its class name and by its place in the lower half of the web view, and calls no private
+method. The view at the top edge is left, so a fixed header's colour still fills the status bar. If
+WebKit renames the class, the strip shows again and nothing else changes. The other choices were to
+keep the strip, as Safari does, or to remove the bottom inset, which puts a page's fixed bottom
+content under the bar again.
 
 ## Tab flights
 
