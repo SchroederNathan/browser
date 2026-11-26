@@ -112,8 +112,10 @@ component ExactBrowser
   derive hingeGap = book ? hinge + 18 : 0
   derive cardW = floor((w - 32 - 14 * (columns - 1) - hingeGap) / columns)
   derive previewH = round(cardW * h / w)
-  // The grid starts below the control: the status bar, 4 points, the control, 28 points.
-  derive gridTop = viewport.safeAreaTop + 80
+  // The control keeps 16 points from the top edge where the device reports no top safe area, as
+  // the iPhone Duo does. The grid starts below it: the inset, 4 points, the control, 28 points.
+  derive gridInsetTop = max(viewport.safeAreaTop, 16)
+  derive gridTop = gridInsetTop + 80
 
   task leave when leaving
     after(300, showGrid)
@@ -319,7 +321,7 @@ component ExactBrowser
           box position="absolute" left=0 top=0 width=w height=(gridTop - 12) pointer-events="none" background-image="linear-gradient(0deg, rgba(245, 245, 245, 0) 0%, #f5f5f5 55%)"
           // The control is 156 by 48 with its 4-point padding inside, so the thumb (72 by 40) has 4
           // points on every side.
-          row position="absolute" left=((w - 156) / 2) top=(viewport.safeAreaTop + 4) width=156 height=48 box-sizing="border-box" padding=4 gap=4 align-items="center" border-radius="radius.full" background-color="color.surface-raised"
+          row position="absolute" left=((w - 156) / 2) top=(gridInsetTop + 4) width=156 height=48 box-sizing="border-box" padding=4 gap=4 align-items="center" border-radius="radius.full" background-color="color.surface-raised"
             box class=SegmentThumb animation-range=`0px ${w}px`
             button press=showPrivate class=Bare position="relative" width=72 height=44 margin="-2px 0px" display="flex" align-items="center" justify-content="center" border-radius="radius.full" aria-label="Private Tabs" aria-pressed=privatePage testId="private"
               Icon(name="private", size=20, color=(privatePage ? "color.text" : "color.text-secondary"), weight=500)

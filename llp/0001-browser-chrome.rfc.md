@@ -58,6 +58,8 @@ These come from the request of 2026-11-26. `[confirmed]` Nathan Schroeder, 2026-
 18. While the field holds text, its trailing control is a clear button in place of the microphone.
 19. A sheet's content stays clear of the side safe areas, for example the status rail of the folded
     iPhone Duo. The sheet keeps its box, and its content is inset.
+20. The control above the tab grid has padding between it and the top of the screen on every
+    device.
 
 ## Design system
 
@@ -270,6 +272,13 @@ with the screen's ratio a card on the iPhone frame is 472 points high.
 
 The grid has 2 columns in a compact layout, 3 in regular portrait and 4 in regular landscape.
 `[observed]` Paper screens. Across a book fold the grid is two columns on each side of the hinge.
+
+The control above the grid is 4 points below the top inset, and the grid starts 28 points below the
+control. The top inset is the top safe area, and at least 16 points (requirement 20).
+`[observed]` The iPhone Duo simulator reports `safeAreaTop` 0 folded and unfolded: its status rail
+is on the trailing side. Before this change the control was 4 points from the top edge there.
+
+*Agent decision.* The 16-point value is a judgment. It is the design system's `space-4`.
 
 ## Not done
 
