@@ -24,6 +24,8 @@ shape Viewport
   segments: Segment[]
   safeAreaTop: number
   safeAreaBottom: number
+  safeAreaLeft: number
+  safeAreaRight: number
 
 fn shotPath(id: string, n: number): string = `app:/cache/tab-${id}-${n % 2}.png`
 
@@ -86,6 +88,12 @@ component ExactBrowser
   // The sheets. A compact sheet reaches 44 points below the screen so its four corners are one radius.
   derive sheetW = regular ? 401 : w
   derive sheetX = regular ? paneX + (paneW - 401) / 2 : 0
+  // How far each side safe area reaches into a sheet's box. The sheet's content stays clear of
+  // it: the folded Duo's status rail covers the trailing edge of a compact sheet.
+  // @ref LLP 0001#sheet-insets
+  derive sheetInsetLeft = max(0, viewport.safeAreaLeft - sheetX)
+  derive sheetInsetRight = max(0, sheetX + sheetW - (w - viewport.safeAreaRight))
+  derive contentW = sheetW - sheetInsetLeft - sheetInsetRight
   derive searchH = regular ? 320 : min(304 + keyboard, h - 118) + 44
   derive menuH = regular ? min(633, h + 32) : min(640, h - 74) + 44
   derive sheetBottom = regular ? (sheet == "search" ? keyboard - 40 : -48) : -44
@@ -357,16 +365,16 @@ component ExactBrowser
       column class=(open ? BarGrow : BarSettle) color-scheme="light" position="absolute" left=midX bottom=midBottom width=midW height=midH border-radius=midRadius overflow="clip" -exact-glass-tint=(open ? "glass.sheet" : inTabs ? "glass.accent" : "transparent") box-shadow=(open ? "0 -12px 40px rgba(40, 10, 30, 0.18)" : inTabs ? "0 6px 16px rgba(0, 0, 0, 0.16)" : "0 8px 24px rgba(40, 10, 20, 0.18)") testId="bar-middle-surface"
         box class=BarFill background-color="color.accent" opacity=(inTabs and not open ? 0.8 : 0)
         if sheet == "search"
-          column class=SheetContent position="absolute" left=0 top=0 width=sheetW
+          column class=SheetContent position="absolute" left=sheetInsetLeft top=0 width=contentW
             SearchSheet(draft=draft, recents=recents, icons=icons, edit=edit, submit=submit, pick=pick, fill=fill)
         else if sheet == "menu"
-          column class=SheetContent position="absolute" left=0 top=0 width=sheetW
+          column class=SheetContent position="absolute" left=sheetInsetLeft top=0 width=contentW
             MenuSheet(canGoBack=(match active { case some(t) => t.canGoBack, case none => false }), canGoForward=(match active { case some(t) => t.canGoForward, case none => false }), goBack=goBack, goForward=goForward, copyLink=copyLink, reloadPage=reloadPage, closeTab=closeCurrent, later=later)
         else
           button press=pressMiddle class=Bare position="absolute" left=0 top=0 width=midW height=sideSize aria-label=(inTabs ? "New Tab" : `Address, ${hostOf(url)}`) testId="bar-middle"
         // The address: centred in the pill and in the page menu's top row, and on its way to the
         // field's text in the search sheet. @ref LLP 0001#address-flight
-        row position="absolute" left=(sheet == "search" ? 34 : open ? 16 : 0) top=(open ? 16 : 0) width=(sheet == "search" ? sheetW - 98 : open ? sheetW - 32 : midW) height=(open ? 52 : sideSize) align-items="center" justify-content=(sheet == "search" ? "flex-start" : "center") gap=6 pointer-events="none"
+        row position="absolute" left=(sheet == "search" ? sheetInsetLeft + 34 : open ? sheetInsetLeft + 16 : 0) top=(open ? 16 : 0) width=(sheet == "search" ? contentW - 98 : open ? contentW - 32 : midW) height=(open ? 52 : sideSize) align-items="center" justify-content=(sheet == "search" ? "flex-start" : "center") gap=6 pointer-events="none"
           if not open and not inTabs and url != ""
             box class=Fade display="flex"
               box class=BesideLowercase

@@ -56,6 +56,8 @@ These come from the request of 2026-11-26. `[confirmed]` Nathan Schroeder, 2026-
 17. Words typed in the field, with spaces, open a Google search. The field is not for an address
     only.
 18. While the field holds text, its trailing control is a clear button in place of the microphone.
+19. A sheet's content stays clear of the side safe areas, for example the status rail of the folded
+    iPhone Duo. The sheet keeps its box, and its content is inset.
 
 ## Design system
 
@@ -169,6 +171,19 @@ holds text (requirement 18). The two pictures trade places as the bar's pictures
 `PictureOut`), and only the one that shows takes a press. A press on the clear button empties the
 field and keeps the keyboard up. A sheet for the current page opens with the page's address in the
 field, so it opens with the clear button.
+
+### Sheet insets
+
+A sheet's surface keeps its box, and its content stays clear of the side safe areas (requirement
+19). `sheetInsetLeft` and `sheetInsetRight` are how far each side safe area reaches into the sheet's
+box. They come from the sheet's geometry, so they are 0 where the sheet is clear of the safe area,
+as the centred regular sheet is. The content column sits between the two insets and keeps its own
+16-point padding. The address (see "Address flight") takes its place in an open sheet from the same
+insets, so it stays centred in the page menu's top row and on the field's text in the search sheet.
+
+`[observed]` The folded iPhone Duo simulator reports `safeAreaRight` 84: a status rail with the
+clock is on the trailing side. Before this change the field's trailing control and the page menu's
+Copy Link and Reload buttons were under the rail.
 
 ### Scrim
 
