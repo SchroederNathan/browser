@@ -48,6 +48,18 @@ test "a pull down closes a sheet, and a short pull does not"
   expect state sheet == "none"
   expect state pull == 0
 
+test "a pull up makes a sheet as tall as the screen allows, and a pull down returns it"
+  tap "bar-middle"
+  clock +300
+  expect state sheetTall == false
+  tap "sheet-scroll" drag 0 -120
+  clock settle
+  expect state sheetTall == true
+  tap "sheet-field" drag 0 160 from 6 26
+  clock settle
+  expect state sheetTall == false
+  expect state sheet == "search"
+
 test "a control that is not built yet changes nothing"
   tap "bar-right"
   clock settle

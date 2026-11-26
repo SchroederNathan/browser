@@ -47,8 +47,12 @@ component ExactBrowser
   state recents = [] persist
   // Sites' icons as "host address" pairs, the newest first.
   state icons: string[] = [] persist
-  // How far a finger has pulled the open sheet down, in points. @ref LLP 0001#sheet-pull
+  // How far a finger has pulled the open sheet, in points: down is more, up is less than 0.
+  // @ref LLP 0001#sheet-pull
   state pull = 0
+  // An open sheet is at its resting height, or as tall as the screen allows after a pull up.
+  // @ref LLP 0001#sheet-height
+  state sheetTall = false
   // The keyboard's height at each screen size, as "WxH height", the newest first.
   state keyboards: string[] = [] persist
   // A page's snapshot on its way between the screen and its card. "cover": it is over its page
@@ -105,7 +109,9 @@ component ExactBrowser
   derive sideBottom = open and regular ? -76 : inTabs ? 40 : barBottom
   derive leftX = open and not regular ? -76 : inTabs ? paneX + 24 : barX
   derive rightX = open and not regular ? w + 24 : inTabs ? paneX + paneW - 76 : barX + barW - 48
-  // The sheets. A compact sheet reaches 44 points below the screen so its four corners are one radius.
+  // The sheets. A sheet is a panel as tall as the screen allows, attached to the bottom of the
+  // screen. At rest only its top part is on the screen, and a pull up shows all of it. It reaches
+  // 44 points below what it shows so its four corners are one radius. @ref LLP 0001#sheet-height
   derive sheetW = regular ? 401 : w
   derive sheetX = regular ? paneX + (paneW - 401) / 2 : 0
   // How far each side safe area reaches into a sheet's box. The sheet's content stays clear of
@@ -114,14 +120,18 @@ component ExactBrowser
   derive sheetInsetLeft = max(0, viewport.safeAreaLeft - sheetX)
   derive sheetInsetRight = max(0, sheetX + sheetW - (w - viewport.safeAreaRight))
   derive contentW = sheetW - sheetInsetLeft - sheetInsetRight
-  derive searchH = regular ? 320 : min(304 + keyboard, h - 118) + 44
-  derive menuH = regular ? min(633, h + 32) : min(640, h - 74) + 44
-  derive sheetBottom = regular ? (sheet == "search" ? keyboard - 40 : -48) : -44
+  // A sheet's top is never above the status bar and 8 points. At rest the search sheet shows its
+  // field and the recent entries above the keyboard, and the page menu shows its content.
+  derive fullShown = h - viewport.safeAreaTop - 8
+  derive restShown = min(fullShown, sheet == "search" ? min(304 + keyboard, h - 118) : min(640, h - 74))
+  derive sheetTaller = fullShown > restShown
+  derive shown = sheetTall ? fullShown : restShown
+  derive sheetBottom = shown - fullShown - 44
   derive midX = open ? sheetX : inTabs ? paneX + (paneW - 120) / 2 : barX + 58
   derive midBottom = open ? sheetBottom : sideBottom
   derive midW = open ? sheetW : inTabs ? 120 : barW - 116
-  derive midH = open ? (sheet == "search" ? searchH : menuH) : sideSize
-  derive sheetTop = max(0, h - midBottom - midH)
+  derive midH = open ? fullShown + 44 : sideSize
+  derive sheetTop = h - shown
   derive midRadius = open ? (regular ? 32 : 44) : sideSize / 2
 
   // The tab grid. @ref LLP 0001#tab-grid
@@ -241,6 +251,7 @@ component ExactBrowser
   action pressMiddle
     composing = inTabs
     draft = inTabs ? "" : url
+    sheetTall = false
     sheet = "search"
   action focusAddress
     focus("address")
@@ -252,16 +263,38 @@ component ExactBrowser
     composing = false
     draft = url
     sheet = "search"
+  // The sheet follows the finger: down without a limit, and up as far as its full height.
   action pullSheet(dx: number, dy: number)
     if open
-      pull = max(0, pull + dy)
-  // A sheet let go past 96 points, or flicked down, closes. Any other returns to its place.
+      pull = max(shown - fullShown, pull + dy)
+  // A sheet let go 64 points up (or half of the way it can grow, if that is less), or flicked up,
+  // becomes tall. Let go 96 points down, or flicked down, a tall sheet returns to its resting
+  // height and a resting sheet closes.
   action dropSheet(vx: number, vy: number)
-    if open and (pull > 96 or vy > 600)
+    let up = pull < 0 - min(64, (fullShown - restShown) / 2) or vy < -600
+    let down = pull > 96 or vy > 600
+    if open and down and not (sheetTall and sheetTaller)
       blur()
       sheet = "none"
       composing = false
+    sheetTall = sheetTaller and (up or (sheetTall and not down))
     pull = 0
+  // The sheet's content was pulled 64 points down past its top: the sheet takes one step down, as
+  // it does for a pull on a part that does not scroll.
+  action contentScrolled(x: number, y: number)
+    if open and y < -64
+      if sheetTall and sheetTaller
+        sheetTall = false
+      else
+        blur()
+        sheet = "none"
+        composing = false
+  // The screen changed size: the device folded, unfolded or turned. An open sheet closes.
+  action screenResized(width: number, height: number)
+    if open
+      blur()
+      sheet = "none"
+      composing = false
   action pressRight
     if inTabs
       if current != ""
@@ -274,6 +307,7 @@ component ExactBrowser
         else
           screen = "browse"
     else
+      sheetTall = false
       sheet = "menu"
   action closeSheet
     blur()
@@ -376,7 +410,7 @@ component ExactBrowser
       current = ""
 
   view
-    main testId="root" viewport-fit="cover" width="100%" height="100%" position="relative" overflow="hidden" font-family="Inter" color="color.text" background-color=(inTabs ? "color.surface" : "color.background") interactive-widget="overlays-content" status-bar-style=(inTabs ? "dark-content" : "auto")
+    main testId="root" resize=screenResized viewport-fit="cover" width="100%" height="100%" position="relative" overflow="hidden" font-family="Inter" color="color.text" background-color=(inTabs ? "color.surface" : "color.background") interactive-widget="overlays-content" status-bar-style=(inTabs ? "dark-content" : "auto")
       // The data words tell the page's web view where the status bar ends and where the bar's
       // top is, with 8 points of room: the page lays its fixed content out between those lines
       // and still scrolls under both. @ref LLP 0001#page-insets
@@ -458,19 +492,20 @@ component ExactBrowser
           box class=(inTabs ? PictureIn : PictureOut)
             Icon(name="close-all", size=19, color="color.text", weight=500)
 
-      column class=(open ? BarGrow : BarSettle) pan=pullSheet panrelease=dropSheet touch-action="none" translate=`0px ${pull}px` transition=(pull > 0 ? "none" : none) color-scheme="light" position="absolute" left=midX bottom=midBottom width=midW height=midH border-radius=midRadius overflow="clip" -exact-glass-tint=(open ? "glass.sheet" : inTabs ? "glass.accent" : "transparent") box-shadow=(open ? "0 -12px 40px rgba(40, 10, 30, 0.18)" : inTabs ? "0 6px 16px rgba(0, 0, 0, 0.16)" : "0 8px 24px rgba(40, 10, 20, 0.18)") testId="bar-middle-surface"
+      column class=(open ? BarGrow : BarSettle) pan=pullSheet panrelease=dropSheet touch-action="none" translate=`0px ${pull}px` transition=(pull != 0 ? "none" : none) color-scheme="light" position="absolute" left=midX bottom=midBottom width=midW height=midH border-radius=midRadius overflow="clip" -exact-glass-tint=(open ? "glass.sheet" : inTabs ? "glass.accent" : "transparent") box-shadow=(open ? "0 -12px 40px rgba(40, 10, 30, 0.18)" : inTabs ? "0 6px 16px rgba(0, 0, 0, 0.16)" : "0 8px 24px rgba(40, 10, 20, 0.18)") testId="bar-middle-surface"
         box class=BarFill background-color="color.accent" opacity=(inTabs and not open ? 0.8 : 0)
         if open
-          column class=SheetShell position="absolute" left=sheetInsetLeft top=0 width=contentW
-            column padding-top="space-4" padding-left="space-4" padding-right="space-4" gap=(sheet == "search" ? 14 : 18)
-              column class=SheetContent flex-shrink=0
-                SheetField(mode=sheet, draft=draft, canGoBack=(match active { case some(t) => t.canGoBack, case none => false }), canGoForward=(match active { case some(t) => t.canGoForward, case none => false }), edit=edit, submit=submit, fill=fill, goBack=goBack, goForward=goForward, copyLink=copyLink, reloadPage=reloadPage, editAddress=editAddress)
-              if sheet == "search"
-                column class=SheetContent flex-shrink=0
-                  SearchSheet(recents=recents, icons=icons, pick=pick, fill=fill)
-              else
-                column class=SheetContent flex-shrink=0
-                  MenuSheet(closeTab=closeCurrent, later=later)
+          // What the sheet holds ends at the bottom of the screen, or at the keyboard's top. It
+          // scrolls where the sheet shows all of itself and cannot grow. @ref LLP 0001#sheet-height
+          column class=SheetShell position="absolute" left=sheetInsetLeft top=0 width=contentW height=(shown - viewport.keyboardHeight) padding-top="space-4" gap=(sheet == "search" ? 14 : 18)
+            column class=SheetContent flex-shrink=0 padding-left="space-4" padding-right="space-4"
+              SheetField(mode=sheet, draft=draft, canGoBack=(match active { case some(t) => t.canGoBack, case none => false }), canGoForward=(match active { case some(t) => t.canGoForward, case none => false }), edit=edit, submit=submit, fill=fill, goBack=goBack, goForward=goForward, copyLink=copyLink, reloadPage=reloadPage, editAddress=editAddress)
+            if sheet == "search"
+              scroll class=SheetContent flex=1 min-height=0 scroll=contentScrolled overflow-y=(sheetTall or not sheetTaller ? "scroll" : "hidden") padding-left="space-4" padding-right="space-4" padding-bottom=(keyboardUp ? 16 : viewport.safeAreaBottom + 16) testId="sheet-scroll"
+                SearchSheet(recents=recents, icons=icons, pick=pick, fill=fill)
+            else
+              scroll class=SheetContent flex=1 min-height=0 scroll=contentScrolled overflow-y=(sheetTall or not sheetTaller ? "scroll" : "hidden") padding-left="space-4" padding-right="space-4" padding-bottom=(viewport.safeAreaBottom + 16) testId="sheet-scroll"
+                MenuSheet(closeTab=closeCurrent, later=later)
         else
           button press=pressMiddle class=Bare position="absolute" left=0 top=0 width=midW height=sideSize aria-label=(inTabs ? "New Tab" : `Address, ${hostOf(url)}`) testId="bar-middle"
         // The address: centred in the pill and in the page menu's top row, and on its way to the

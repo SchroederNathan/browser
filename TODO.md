@@ -60,8 +60,8 @@ Private tabs work: the left page of the pager above the tab grid (`app.contract`
 - [ ] Favorites. The second design pass removed the site tiles from the sheet.
 - [ ] Let the person clear the recent entries.
 - [ ] Let the person choose the search engine. `addressOf` in `address.contract` uses Google.
-- [ ] A pull down on the search field does not move the sheet: the field keeps its own drags. A
-  pull anywhere else on the sheet closes it.
+- [ ] A pull on the search field does not move the sheet: the field keeps its own drags. A pull
+  anywhere else on the sheet moves it.
 
 ## Pages
 

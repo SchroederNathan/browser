@@ -78,6 +78,10 @@ These come from the second request of 2026-11-26. `[confirmed]` Nathan Schroeder
 28. A page is the full width of the screen on the iPhone Duo. The Duo's vertical bar is off.
 29. Where the sheet is narrower than the screen, the side buttons leave downward when a sheet
     opens. Where the sheet is the full width, they leave to the sides.
+30. Every sheet is attached to the bottom of the screen, also on the unfolded Duo. Its content
+    scrolls. A pull up makes it as tall as the screen allows. What takes focus stays above the
+    keyboard.
+31. A change of the screen's size (a fold, an unfold, a turn) closes an open sheet.
 
 ## Design system
 
@@ -185,7 +189,7 @@ Values are from the Paper screens. `[observed]`
 | Layout | Bar | Sheet |
 | --- | --- | --- |
 | Compact (width under 600: iPhone, folded Duo) | 12 from each side, 34 from the bottom, 48 high | Full width, attached to the bottom, radius 44 |
-| Regular (unfolded Duo) | 381 wide, centred, 32 (portrait) or 24 (landscape) from the bottom | 401 wide, centred, radius 32 |
+| Regular (unfolded Duo) | 381 wide, centred, 32 (portrait) or 24 (landscape) from the bottom | 401 wide, centred, attached to the bottom, radius 32 |
 | Book fold (half-open Duo) | As regular, centred in the trailing half | As regular, in the trailing half |
 
 *Agent decision.* A compact sheet reaches 44 points below the screen. Its four corners then share
@@ -247,8 +251,8 @@ of this app. It is not fixed.
 
 ### Keyboard height
 
-A sheet's place depends on the keyboard's height: a regular search sheet floats above the keyboard,
-and a compact one is tall enough for the field and the recent entries above it. The focus comes
+A sheet's height depends on the keyboard's height: the search sheet at rest is tall enough for the
+field and the recent entries above the keyboard. The focus comes
 after the sheet grows, so the sheet needs the height before the keyboard is up. `keyboards` keeps
 the height last seen at each screen size, as "WxH height", and `keyboard` reads it. Before the
 first time at a screen size the height is 336 points, the Paper iPhone frame's.
@@ -274,20 +278,46 @@ transition and nothing is cut.
 
 `SheetShell` holds the row and what is below it, and fades both out when the sheet closes.
 
+### Sheet height
+
+A sheet is a panel as tall as the screen allows: its top is 8 points below the status bar. It is
+attached to the bottom of the screen in every layout (requirement 30). At rest only its top part is
+on the screen: the page menu's content, or the search field and the recent entries above the
+keyboard. `sheetTall` says that all of it is on the screen. On a short screen the resting height is
+already the full height.
+
+What the sheet holds ends at the bottom of the screen, or at the keyboard's top, so a recent entry
+is never under the keyboard. It scrolls where the sheet shows all of itself and cannot grow.
+
+*Agent decision.* The first design drew the regular search sheet 320 points high above the
+keyboard. It is now the compact sheet at a width of 401 points.
+
 ### Sheet pull
 
-A finger that pulls an open sheet down moves the middle surface with it (requirement 25): `pull`
-is the distance, and the surface takes it as a `translate` with the transition off. When the finger
-lifts past 96 points, or with a speed down of more than 600 points a second, the sheet closes.
-Otherwise `pull` returns to 0, and the surface's spring takes it back. The surface has
-`touch-action="none"`, so the browser leaves it the drag on the web host.
+A finger that pulls an open sheet moves the middle surface with it (requirements 25 and 30): `pull`
+is the distance, and the surface takes it as a `translate` with the transition off. The sheet goes
+down without a limit and up as far as its full height. When the finger lifts, `pull` returns to 0
+and the surface's spring takes the sheet to its place:
+
+- 64 points up, or a flick up: the sheet becomes tall.
+- 96 points down, or a flick down: a tall sheet returns to its resting height, and a resting sheet
+  closes.
+
+Where the content scrolls, a pull on it scrolls it. A pull 64 points down past the content's top
+takes the same step down. A pull on the top row always moves the sheet.
+
+The surface has `touch-action="none"`, so the browser leaves it the drag on the web host.
 
 `[observed]` On the simulator a pull of 50 points returned and a pull of 160 points closed the
 sheet. `[observed]` A pull that starts on the text field does not move the sheet: the field keeps
 its own drags. A flick (`swipe` with `swipe-direction="down"`) on the field did not close the
 sheet either, so there is none.
 
-*Agent decision.* The 96 points and the 600 points a second are a judgment.
+`[observed]` Exact's own drag for a sheet's height (`heightDragFor`) was tried first. On iOS it
+does not start on a button, and the sheets are made of buttons, so the sheet could be dragged only
+from the gaps between them. A `pan` hears a drag that starts on a button.
+
+*Agent decision.* The 64 and 96 points and the 600 points a second are a judgment.
 
 ### Scrim
 
