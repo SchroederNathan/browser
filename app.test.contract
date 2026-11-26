@@ -5,6 +5,7 @@ test "the address pill opens the search sheet on the page's address"
   expect state sheet == "search"
   expect state composing == false
   expect state draft == "https://expo.dev/"
+  clock +300
   expect focused "address"
   tap "scrim"
   expect state sheet == "none"

@@ -27,6 +27,7 @@ shape Viewport
   safeAreaLeft: number
   safeAreaRight: number
 
+fn heightOf(text: string): number = match parseNumber(text) { case some(n) => n, case none => 336 }
 fn shotPath(id: string, n: number): string = `app:/cache/tab-${id}-${n % 2}.png`
 
 component ExactBrowser
@@ -46,6 +47,8 @@ component ExactBrowser
   state recents = [] persist
   // Sites' icons as "host address" pairs, the newest first.
   state icons: string[] = [] persist
+  // The keyboard's height at each screen size, as "WxH height", the newest first.
+  state keyboards: string[] = [] persist
   // The tab whose snapshot covers its page while it flies in from its card.
   state landing = ""
   // The tabs button was pressed, and the page's snapshot is being taken.
@@ -65,7 +68,13 @@ component ExactBrowser
   // Regular: an unfolded iPhone Duo. The bar and the sheets float at a fixed width there.
   derive regular = w >= 600
   derive portrait = h >= w
-  derive keyboard = viewport.keyboardHeight >= 120 ? viewport.keyboardHeight : 336
+  // The keyboard's height, known before the keyboard is up, so a sheet grows to its place once.
+  // It is the height last seen at this screen size, and 336 points before the first.
+  // @ref LLP 0001#keyboard-height
+  derive screenKey = `${w}x${h} `
+  derive keyboardUp = viewport.keyboardHeight >= 120
+  derive keyboardSeen = match first(keyboards.filter(k => k.startsWith(screenKey))) { case some(k) => heightOf(k.slice(screenKey.length)), case none => 336 }
+  derive keyboard = keyboardUp ? viewport.keyboardHeight : keyboardSeen
 
   derive open = sheet != "none"
   derive inTabs = screen == "tabs"
@@ -121,6 +130,12 @@ component ExactBrowser
     after(300, showGrid)
   task land when landing != "" key=landing
     after(700, landed)
+  // The field takes focus after the sheet has grown: bringing the keyboard up stops the frames
+  // of a spring that is still moving. @ref LLP 0001#sheet-focus
+  task focusField when sheet == "search"
+    after(250, focusAddress)
+  task learnKeyboard when sheet == "search" and keyboardUp and viewport.keyboardHeight != keyboardSeen
+    after(400, rememberKeyboard)
   task snap when snapDue > 0 key=snapDue
     after(900, snapPage)
 
@@ -183,8 +198,11 @@ component ExactBrowser
     composing = inTabs
     draft = inTabs ? "" : url
     sheet = "search"
+  action focusAddress
     focus("address")
     selectText("address")
+  action rememberKeyboard
+    keyboards = [`${screenKey}${viewport.keyboardHeight}`].concat(keyboards.filter(k => not k.startsWith(screenKey))).slice(0, 8)
   action pressRight
     if inTabs
       if current != ""

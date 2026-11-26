@@ -64,6 +64,7 @@ These come from the request of 2026-11-26. `[confirmed]` Nathan Schroeder, 2026-
     white page.
 22. A bar surface changes colour by a fade over its whole shape. No edge of a colour moves across
     it.
+23. The search sheet grows out of the pill at once and without a stop, as the page menu does.
 
 ## Design system
 
@@ -212,6 +213,35 @@ insets, so it stays centred in the page menu's top row and on the field's text i
 `[observed]` The folded iPhone Duo simulator reports `safeAreaRight` 84: a status rail with the
 clock is on the trailing side. Before this change the field's trailing control and the page menu's
 Copy Link and Reload buttons were under the rail.
+
+### Sheet focus
+
+The search field takes focus 250 ms after the sheet starts to grow (the task `focusField`), when
+the surface's spring is almost at rest (requirement 23). The field has no `autofocus`.
+
+`[observed]` When the press that opened the sheet also focused the field, the simulator drew no
+frame of the spring until the keyboard was ready: for 5 frames at 30 frames a second, and for 13
+frames the first time the keyboard came up, the pill's glass was not drawn and nothing moved. Then
+the sheet appeared together with the keyboard. With the focus 100 ms after the press the spring
+stopped part of the way. With 250 ms the sheet grows as the page menu does, and the keyboard
+follows it.
+
+`[observed]` In the first frame after a press that opens either sheet, the pill's glass is not
+drawn. The frame is there with one class and with one tint on the surface, so it is not a style
+of this app. It is not fixed.
+
+### Keyboard height
+
+A sheet's place depends on the keyboard's height: a regular search sheet floats above the keyboard,
+and a compact one is tall enough for the field and the recent entries above it. The focus comes
+after the sheet grows, so the sheet needs the height before the keyboard is up. `keyboards` keeps
+the height last seen at each screen size, as "WxH height", and `keyboard` reads it. Before the
+first time at a screen size the height is 336 points, the Paper iPhone frame's.
+
+`[observed]` On the unfolded iPhone Duo, with 336 points for a keyboard that is lower, the sheet
+grew to one place and then moved down when the keyboard came. `[observed]` On the folded Duo the
+app kept "466x678 265" and read 265 at the next launch. The unfolded pose was not seen again with
+the kept height: the simulator stopped showing its software keyboard.
 
 ### Scrim
 
