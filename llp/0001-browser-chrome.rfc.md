@@ -62,6 +62,8 @@ These come from the request of 2026-11-26. `[confirmed]` Nathan Schroeder, 2026-
     device.
 21. Each of the two cards in the tabs button has a shadow, so a white snapshot can be seen over a
     white page.
+22. A bar surface changes colour by a fade over its whole shape. No edge of a colour moves across
+    it.
 
 ## Design system
 
@@ -134,6 +136,13 @@ read over a white page, and label-coloured content can be read over both.
 *Agent decision.* On the tab grid the design draws the plus button black and the side buttons
 `neutral-200`. A tint alone left the glass lighter than that, so a flat fill (`BarFill`) fades in
 over the glass at 0.8 and 0.7.
+
+The fill is larger than any surface, and each surface clips it to its own shape (requirement 22).
+`[observed]` A surface's spring moves and resizes the surface only. A child keeps its final layout
+while the surface moves, so a fill of the surface's own size showed a lighter band with a moving
+edge as the pill shrank into the plus button, and a square inside each round side button on the way
+back. `[observed]` A `background-color` on the glass surface itself is not an alternative: on the
+simulator it left the side buttons white.
 
 *Agent decision.* The tint alphas (0.78, 0.7, 0.88) and the fill alphas are a judgment. The design draws these surfaces
 as flat fills (`neutral-100`, `neutral-200`, `neutral-900`); the alphas let the page show through.

@@ -341,7 +341,7 @@ component ExactBrowser
 
       // The bar's three glass surfaces. Each keeps its place in the tree through every state, so
       // one spring carries it between them. @ref LLP 0001#one-spring
-      column class=(open ? BarGrow : BarSettle) color-scheme="light" position="absolute" left=leftX bottom=sideBottom width=sideSize height=sideSize border-radius=(sideSize / 2) -exact-glass-tint=(inTabs ? "glass.control" : "transparent") testId="bar-left-surface"
+      column class=(open ? BarGrow : BarSettle) color-scheme="light" position="absolute" left=leftX bottom=sideBottom width=sideSize height=sideSize border-radius=(sideSize / 2) overflow="clip" -exact-glass-tint=(inTabs ? "glass.control" : "transparent") testId="bar-left-surface"
         box class=BarFill background-color="color.surface-raised" opacity=(inTabs ? 0.7 : 0)
         button press=pressLeft class=Bare position="absolute" left=0 top=0 width=sideSize height=sideSize aria-label=(inTabs ? "Close All Tabs" : "Tabs") testId="bar-left"
           box class=(inTabs ? PictureOut : PictureIn)
@@ -387,7 +387,7 @@ component ExactBrowser
         box class=(inTabs and not open ? PictureIn : PictureOut)
           Icon(name="plus", size=20, color="color.on-accent", weight=600)
 
-      column class=(open ? BarGrow : BarSettle) color-scheme="light" position="absolute" left=rightX bottom=sideBottom width=sideSize height=sideSize border-radius=(sideSize / 2) -exact-glass-tint=(inTabs ? "glass.control" : "transparent") testId="bar-right-surface"
+      column class=(open ? BarGrow : BarSettle) color-scheme="light" position="absolute" left=rightX bottom=sideBottom width=sideSize height=sideSize border-radius=(sideSize / 2) overflow="clip" -exact-glass-tint=(inTabs ? "glass.control" : "transparent") testId="bar-right-surface"
         box class=BarFill background-color="color.surface-raised" opacity=(inTabs ? 0.7 : 0)
         button press=pressRight class=Bare position="absolute" left=0 top=0 width=sideSize height=sideSize aria-label=(inTabs ? "Done" : "Page Menu") testId="bar-right"
           box class=(inTabs ? PictureOut : PictureIn)
