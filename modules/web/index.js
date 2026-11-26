@@ -5,6 +5,9 @@
 const hatches = {};
 import * as pageHatch from './hatch-page.js';
 hatches["page"] = pageHatch;
+import * as windowHatch from './hatch-window.js';
+export function window(x) { windowHatch.built(x); }
+export function windowEnded(x) { windowHatch.ended(x); }
 // exact:hatches (exact hatch adds a word's line above this one)
 
 export function element(e) { hatches[e.hatch]?.element?.(e); }

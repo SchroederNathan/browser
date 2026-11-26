@@ -28,10 +28,12 @@ final class AppHatches: ExactModule {
     }
 
     override func window(_ window: ExactWindow) {
+        windowHatch(window)
         // exact:window
     }
 
     override func windowEnded(_ window: ExactWindow) {
+        windowHatchEnded(window)
         // exact:windowEnded
     }
 }

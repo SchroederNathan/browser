@@ -73,6 +73,10 @@ These come from the request of 2026-11-26. `[confirmed]` Nathan Schroeder, 2026-
 27. A page shows under the bar as it scrolls, also when the page has a fixed bar or a toast at its
     bottom edge.
 
+These come from the second request of 2026-11-26. `[confirmed]` Nathan Schroeder, 2026-11-26.
+
+28. A page is the full width of the screen on the iPhone Duo. The Duo's vertical bar is off.
+
 ## Design system
 
 The Paper page "Browser Design System" (Tailwind neutral, Inter, v0.1) gives a palette, eight
@@ -305,6 +309,22 @@ grid the text itself blurs out as the plus blurs in.
 fades stays mounted and trades places by transition (`PictureIn` and `PictureOut`, `AddressIn` and
 `AddressOut`).
 
+## Vertical bar
+
+On the iPhone Duo UIKit puts the status bar in a vertical bar at one side of the screen, and the
+safe area keeps that side clear: the simulator reported `safeAreaRight` 84 and `safeAreaTop` 0. A
+page then lost that width. The app turns the vertical bar off (requirement 28): the status bar is
+at the top again, and a page is the full width.
+
+UIKit asks the window's root view controller for `preferredVerticalBarBehavior` (iOS 27.1), and
+`UIVerticalBarBehavior.disabled` turns the bar off. Exact owns that controller and has no setting
+for it, so `modules/apple/WindowHatch.swift` adds the answer to the controller's class when the
+window connects.
+
+`[observed]` With the bar off the folded Duo simulator reports `safeAreaTop` 82 and no side safe
+area. The sheet insets (see "Sheet insets") are then 0 there; they still apply wherever a side safe
+area reaches into a sheet.
+
 ## Pages
 
 Each tab is one `iframe` in the `persist:browser` partition. A tab's `src` never changes after the
@@ -403,8 +423,9 @@ The grid has 2 columns in a compact layout, 3 in regular portrait and 4 in regul
 
 The control above the grid is 4 points below the top inset, and the grid starts 28 points below the
 control. The top inset is the top safe area, and at least 16 points (requirement 20).
-`[observed]` The iPhone Duo simulator reports `safeAreaTop` 0 folded and unfolded: its status rail
-is on the trailing side. Before this change the control was 4 points from the top edge there.
+`[observed]` With its vertical bar on, the iPhone Duo simulator reported `safeAreaTop` 0 folded and
+unfolded, and the control was 4 points from the top edge there. The vertical bar is off now (see
+"Vertical bar"), and the minimum stays for any device with no top safe area.
 
 *Agent decision.* The 16-point value is a judgment. It is the design system's `space-4`.
 
