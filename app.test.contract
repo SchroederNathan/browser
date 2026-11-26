@@ -37,6 +37,17 @@ test "the address in the page menu turns the menu into the search sheet"
   clock +300
   expect focused "address"
 
+test "a pull down closes a sheet, and a short pull does not"
+  tap "bar-right"
+  clock settle
+  tap "menu-sheet" drag 0 40
+  clock settle
+  expect state sheet == "menu"
+  tap "menu-sheet" drag 0 220
+  clock settle
+  expect state sheet == "none"
+  expect state pull == 0
+
 test "a control that is not built yet changes nothing"
   tap "bar-right"
   clock settle

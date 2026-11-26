@@ -47,6 +47,8 @@ component ExactBrowser
   state recents = [] persist
   // Sites' icons as "host address" pairs, the newest first.
   state icons: string[] = [] persist
+  // How far a finger has pulled the open sheet down, in points. @ref LLP 0001#sheet-pull
+  state pull = 0
   // The keyboard's height at each screen size, as "WxH height", the newest first.
   state keyboards: string[] = [] persist
   // The tab whose snapshot covers its page while it flies in from its card.
@@ -208,6 +210,16 @@ component ExactBrowser
     composing = false
     draft = url
     sheet = "search"
+  action pullSheet(dx: number, dy: number)
+    if open
+      pull = max(0, pull + dy)
+  // A sheet let go past 96 points, or flicked down, closes. Any other returns to its place.
+  action dropSheet(vx: number, vy: number)
+    if open and (pull > 96 or vy > 600)
+      blur()
+      sheet = "none"
+      composing = false
+    pull = 0
   action pressRight
     if inTabs
       if current != ""
@@ -389,7 +401,7 @@ component ExactBrowser
           box class=(inTabs ? PictureIn : PictureOut)
             Icon(name="close-all", size=19, color="color.text", weight=500)
 
-      column class=(open ? BarGrow : BarSettle) color-scheme="light" position="absolute" left=midX bottom=midBottom width=midW height=midH border-radius=midRadius overflow="clip" -exact-glass-tint=(open ? "glass.sheet" : inTabs ? "glass.accent" : "transparent") box-shadow=(open ? "0 -12px 40px rgba(40, 10, 30, 0.18)" : inTabs ? "0 6px 16px rgba(0, 0, 0, 0.16)" : "0 8px 24px rgba(40, 10, 20, 0.18)") testId="bar-middle-surface"
+      column class=(open ? BarGrow : BarSettle) pan=pullSheet panrelease=dropSheet touch-action="none" translate=`0px ${pull}px` transition=(pull > 0 ? "none" : none) color-scheme="light" position="absolute" left=midX bottom=midBottom width=midW height=midH border-radius=midRadius overflow="clip" -exact-glass-tint=(open ? "glass.sheet" : inTabs ? "glass.accent" : "transparent") box-shadow=(open ? "0 -12px 40px rgba(40, 10, 30, 0.18)" : inTabs ? "0 6px 16px rgba(0, 0, 0, 0.16)" : "0 8px 24px rgba(40, 10, 20, 0.18)") testId="bar-middle-surface"
         box class=BarFill background-color="color.accent" opacity=(inTabs and not open ? 0.8 : 0)
         if open
           column class=SheetShell position="absolute" left=sheetInsetLeft top=0 width=contentW

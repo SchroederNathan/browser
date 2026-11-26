@@ -68,6 +68,7 @@ These come from the request of 2026-11-26. `[confirmed]` Nathan Schroeder, 2026-
 24. A press on the address in the page menu turns the menu into the search sheet. The address
     moves to the field, Back and Forward leave to the leading side, and Copy Link and Reload give
     way to the field's own control.
+25. A pull down closes a sheet. A press beside the sheet still closes it.
 
 ## Design system
 
@@ -261,6 +262,21 @@ transition and nothing is cut.
 - The menu's tiles and rows leave, and the recent entries rise in below the row.
 
 `SheetShell` holds the row and what is below it, and fades both out when the sheet closes.
+
+### Sheet pull
+
+A finger that pulls an open sheet down moves the middle surface with it (requirement 25): `pull`
+is the distance, and the surface takes it as a `translate` with the transition off. When the finger
+lifts past 96 points, or with a speed down of more than 600 points a second, the sheet closes.
+Otherwise `pull` returns to 0, and the surface's spring takes it back. The surface has
+`touch-action="none"`, so the browser leaves it the drag on the web host.
+
+`[observed]` On the simulator a pull of 50 points returned and a pull of 160 points closed the
+sheet. `[observed]` A pull that starts on the text field does not move the sheet: the field keeps
+its own drags. A flick (`swipe` with `swipe-direction="down"`) on the field did not close the
+sheet either, so there is none.
+
+*Agent decision.* The 96 points and the 600 points a second are a judgment.
 
 ### Scrim
 
