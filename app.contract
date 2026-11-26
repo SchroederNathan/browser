@@ -100,9 +100,11 @@ component ExactBrowser
   derive barX = regular ? paneX + (paneW - 381) / 2 : 12
   derive barBottom = regular ? (portrait ? 32 : 24) : 34
   derive sideSize = inTabs ? 52 : 48
-  derive sideBottom = inTabs ? 40 : barBottom
-  derive leftX = open ? -76 : inTabs ? paneX + 24 : barX
-  derive rightX = open ? w + 24 : inTabs ? paneX + paneW - 76 : barX + barW - 48
+  // While a sheet is open the side buttons are off the screen: past its sides where the sheet is
+  // the full width, and below it where the sheet is narrower. @ref LLP 0001#one-spring
+  derive sideBottom = open and regular ? -76 : inTabs ? 40 : barBottom
+  derive leftX = open and not regular ? -76 : inTabs ? paneX + 24 : barX
+  derive rightX = open and not regular ? w + 24 : inTabs ? paneX + paneW - 76 : barX + barW - 48
   // The sheets. A compact sheet reaches 44 points below the screen so its four corners are one radius.
   derive sheetW = regular ? 401 : w
   derive sheetX = regular ? paneX + (paneW - 401) / 2 : 0

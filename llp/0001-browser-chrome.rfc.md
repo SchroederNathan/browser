@@ -76,6 +76,8 @@ These come from the request of 2026-11-26. `[confirmed]` Nathan Schroeder, 2026-
 These come from the second request of 2026-11-26. `[confirmed]` Nathan Schroeder, 2026-11-26.
 
 28. A page is the full width of the screen on the iPhone Duo. The Duo's vertical bar is off.
+29. Where the sheet is narrower than the screen, the side buttons leave downward when a sheet
+    opens. Where the sheet is the full width, they leave to the sides.
 
 ## Design system
 
@@ -127,9 +129,11 @@ Each bar surface is one `column` with the style `BarGrow` or `BarSettle`. Its `l
 A surface takes `BarGrow` while a sheet is open and `BarSettle` otherwise, so all three surfaces
 always share one spring.
 
-The side buttons leave the screen by layout, not by a transform: their `left` becomes a value
-outside the screen. So the sheet's growth and the buttons' exit are the same transition with the
-same value (requirement 4).
+The side buttons leave the screen by layout, not by a transform. Where the sheet is the full
+width, their `left` becomes a value past the screen's sides. Where the sheet is narrower than the
+screen (the regular layout), their `bottom` becomes a value below the screen, so they do not cross
+the whole width (requirement 29). So the sheet's growth and the buttons' exit are the same
+transition with the same value (requirement 4).
 
 `[observed]` On the iPhone 17 Pro Max simulator (iOS 27.2) the three surfaces move together and the
 sheet settles after a small overshoot.
