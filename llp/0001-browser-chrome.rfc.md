@@ -65,6 +65,9 @@ These come from the request of 2026-11-26. `[confirmed]` Nathan Schroeder, 2026-
 22. A bar surface changes colour by a fade over its whole shape. No edge of a colour moves across
     it.
 23. The search sheet grows out of the pill at once and without a stop, as the page menu does.
+24. A press on the address in the page menu turns the menu into the search sheet. The address
+    moves to the field, Back and Forward leave to the leading side, and Copy Link and Reload give
+    way to the field's own control.
 
 ## Design system
 
@@ -243,6 +246,22 @@ grew to one place and then moved down when the keyboard came. `[observed]` On th
 app kept "466x678 265" and read 265 at the next launch. The unfolded pose was not seen again with
 the kept height: the simulator stopped showing its software keyboard.
 
+### Sheet field
+
+The top row of both sheets is one row, `SheetField` (requirement 24). In the page menu it holds
+Back, Forward, the address, Copy Link and Reload. In the search sheet it is the field. A press on
+the address in the page menu sets `sheet` to "search": the row stays, so its parts change place by
+transition and nothing is cut.
+
+- Back and Forward move 32 points to the leading side as they fade (`LeadingOut`).
+- Copy Link and Reload blur out, and the field's trailing control blurs in, as the bar's pictures
+  do (`TrailingOut`, `TrailingIn`).
+- The row takes the field's ring (`FieldEditing`).
+- The address flies to the field's text (see "Address flight").
+- The menu's tiles and rows leave, and the recent entries rise in below the row.
+
+`SheetShell` holds the row and what is below it, and fades both out when the sheet closes.
+
 ### Scrim
 
 A layer between the page and an open sheet darkens the page (`scrim.tint`, black at 32%). It fades
@@ -255,10 +274,13 @@ strong, so the layer is a dark overlay only. `[confirmed]` Nathan Schroeder, 202
 
 ## Address flight
 
-The address is one `text` in the middle surface through every state. Its parent row changes place
-with the state: centred in the pill, centred in the page menu's top row, and at the field's text in
-the search sheet. The text carries the bar's spring, so it flies to its new place. In the search
-sheet it blurs and fades out as the field, which holds the full address, fades in.
+The address is one `text` in the middle surface through every state, in a holder. The holder's
+parent row changes place with the state: centred in the pill, centred in the page menu's top row,
+and at the field's text in the search sheet. The holder carries the bar's spring, so the address
+flies to its new place. On the way to the search field the holder fades after 130 ms
+(`AddressAway`), and the field's own text, which is the full address, fades in after 220 ms
+(`FieldText`): the address is seen to arrive before the field's text takes its place. For the tab
+grid the text itself blurs out as the plus blurs in.
 
 `[observed]` A `filter` animates as a transition and not in `keyframes`. So content that blurs and
 fades stays mounted and trades places by transition (`PictureIn` and `PictureOut`, `AddressIn` and

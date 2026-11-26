@@ -27,6 +27,16 @@ test "the chevron opens the page menu, and a press beside it closes it"
   expect state sheet == "none"
   expect tree missing "menu-summarize"
 
+test "the address in the page menu turns the menu into the search sheet"
+  tap "bar-right"
+  clock settle
+  tap "menu-address"
+  expect state sheet == "search"
+  expect state draft == "https://expo.dev/"
+  expect tree missing "menu-summarize"
+  clock +300
+  expect focused "address"
+
 test "a control that is not built yet changes nothing"
   tap "bar-right"
   clock settle

@@ -58,6 +58,9 @@ theme
   // A card's drop shadow and hairline ring in the tabs button.
   thumbnail.shadow = rgb(0 0 0 / 0.32)  scheme=fixed
   thumbnail.ring = rgb(0 0 0 / 0.22)  scheme=fixed
+  // The ring of the search field, and the same ring clear, so it can fade.
+  field.ring = rgb(163 163 163)  scheme=fixed
+  field.ring-clear = rgb(163 163 163 / 0)  scheme=fixed
   // The dark wash over the page behind an open sheet.
   scrim.tint = rgb(0 0 0 / 0.32)  scheme=fixed
 

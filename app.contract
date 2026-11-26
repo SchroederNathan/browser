@@ -4,8 +4,8 @@
 use Icon from "./icons.contract"
 use hostOf, isAddress, addressOf, shortAddress from "./address.contract"
 use Tab, TabPage, newTab from "./tabs.contract"
-use SearchSheet, MenuSheet from "./sheets.contract"
-use Fly, SheetContent, Fade, BarGrow, BarSettle, PictureIn, PictureOut, BarFill, AddressIn, AddressOut, BesideLowercase, ScrimIn, ScrimOut, GridScreen, SegmentThumb, Thumbnail, ThumbnailFace, Bare from "./design.contract"
+use SheetField, SearchSheet, MenuSheet from "./sheets.contract"
+use Fly, SheetContent, SheetShell, Fade, BarGrow, BarSettle, PictureIn, PictureOut, BarFill, AddressHere, AddressAway, AddressIn, AddressOut, BesideLowercase, ScrimIn, ScrimOut, GridScreen, SegmentThumb, Thumbnail, ThumbnailFace, Bare from "./design.contract"
 
 font "Inter"
   100 900 = "assets/fonts/InterVariable.ttf"
@@ -203,6 +203,11 @@ component ExactBrowser
     selectText("address")
   action rememberKeyboard
     keyboards = [`${screenKey}${viewport.keyboardHeight}`].concat(keyboards.filter(k => not k.startsWith(screenKey))).slice(0, 8)
+  // The address in the page menu's top row: the menu becomes the search sheet.
+  action editAddress
+    composing = false
+    draft = url
+    sheet = "search"
   action pressRight
     if inTabs
       if current != ""
@@ -386,12 +391,17 @@ component ExactBrowser
 
       column class=(open ? BarGrow : BarSettle) color-scheme="light" position="absolute" left=midX bottom=midBottom width=midW height=midH border-radius=midRadius overflow="clip" -exact-glass-tint=(open ? "glass.sheet" : inTabs ? "glass.accent" : "transparent") box-shadow=(open ? "0 -12px 40px rgba(40, 10, 30, 0.18)" : inTabs ? "0 6px 16px rgba(0, 0, 0, 0.16)" : "0 8px 24px rgba(40, 10, 20, 0.18)") testId="bar-middle-surface"
         box class=BarFill background-color="color.accent" opacity=(inTabs and not open ? 0.8 : 0)
-        if sheet == "search"
-          column class=SheetContent position="absolute" left=sheetInsetLeft top=0 width=contentW
-            SearchSheet(draft=draft, recents=recents, icons=icons, edit=edit, submit=submit, pick=pick, fill=fill)
-        else if sheet == "menu"
-          column class=SheetContent position="absolute" left=sheetInsetLeft top=0 width=contentW
-            MenuSheet(canGoBack=(match active { case some(t) => t.canGoBack, case none => false }), canGoForward=(match active { case some(t) => t.canGoForward, case none => false }), goBack=goBack, goForward=goForward, copyLink=copyLink, reloadPage=reloadPage, closeTab=closeCurrent, later=later)
+        if open
+          column class=SheetShell position="absolute" left=sheetInsetLeft top=0 width=contentW
+            column padding-top="space-4" padding-left="space-4" padding-right="space-4" gap=(sheet == "search" ? 14 : 18)
+              column class=SheetContent flex-shrink=0
+                SheetField(mode=sheet, draft=draft, canGoBack=(match active { case some(t) => t.canGoBack, case none => false }), canGoForward=(match active { case some(t) => t.canGoForward, case none => false }), edit=edit, submit=submit, fill=fill, goBack=goBack, goForward=goForward, copyLink=copyLink, reloadPage=reloadPage, editAddress=editAddress)
+              if sheet == "search"
+                column class=SheetContent flex-shrink=0
+                  SearchSheet(recents=recents, icons=icons, pick=pick, fill=fill)
+              else
+                column class=SheetContent flex-shrink=0
+                  MenuSheet(closeTab=closeCurrent, later=later)
         else
           button press=pressMiddle class=Bare position="absolute" left=0 top=0 width=midW height=sideSize aria-label=(inTabs ? "New Tab" : `Address, ${hostOf(url)}`) testId="bar-middle"
         // The address: centred in the pill and in the page menu's top row, and on its way to the
@@ -401,7 +411,8 @@ component ExactBrowser
             box class=Fade display="flex"
               box class=BesideLowercase
                 Icon(name=(url.startsWith("https://") ? "lock" : "unlock"), size=13, color="-exact-label", weight=600)
-          text (sheet == "menu" ? shortAddress(url) : hostOf(url)) class=(sheet == "search" or inTabs ? AddressOut : AddressIn) color=(sheet == "menu" ? "color.text" : "-exact-label") min-width=0 line-clamp=1 testId="address-label"
+          box class=(sheet == "search" ? AddressAway : AddressHere)
+            text (sheet == "menu" ? shortAddress(url) : hostOf(url)) class=(inTabs ? AddressOut : AddressIn) color=(sheet == "menu" ? "color.text" : "-exact-label") min-width=0 line-clamp=1 testId="address-label"
         box class=(inTabs and not open ? PictureIn : PictureOut)
           Icon(name="plus", size=20, color="color.on-accent", weight=600)
 
