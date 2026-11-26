@@ -21,7 +21,7 @@ component SearchSheet
           placeholder="Search or enter address" aria-label="Search or enter address" testId="address"
           flex=1 min-width=0 border="none" background-color="transparent" color="color.text" caret-color="color.accent"
           font-size=17 font-weight=500 letter-spacing="-0.01em"
-          inputmode="url" enterkeyhint="go" autocapitalize="none" autocorrect="off" spellcheck=false autofocus=true
+          inputmode="search" enterkeyhint="go" autocapitalize="none" autocorrect="off" spellcheck=false autofocus=true
         // TODO(TODO.md#voice-search): start dictation.
         button class=Bare width=40 height=40 display="flex" align-items="center" justify-content="center" aria-label="Voice Search" testId="voice"
           Icon(name="microphone", size=18, color="color.text-secondary", weight=500)

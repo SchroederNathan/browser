@@ -51,6 +51,11 @@ These come from the second request. `[confirmed]` Nathan Schroeder, 2026-11-25.
     that is a search shows the search symbol.
 16. Transitions follow "4 principles of transition" (Jakub Antalik, Interfaces issue 16).
 
+These come from the request of 2026-11-26. `[confirmed]` Nathan Schroeder, 2026-11-26.
+
+17. Words typed in the field, with spaces, open a Google search. The field is not for an address
+    only.
+
 ## Design system
 
 The Paper page "Browser Design System" (Tailwind neutral, Inter, v0.1) gives a palette, eight
@@ -153,6 +158,10 @@ entered: an address, or the words of a search. `icons` keeps each site's icon ad
 `FrameNavigation.icons`; a site not seen yet answers its `/favicon.ico`.
 
 *Agent decision.* A private tab adds nothing to `recents` or `icons`.
+
+The field's keyboard is the web search keyboard (`inputmode="search"`), which has a space key and a
+period key (requirement 17). `[observed]` On the simulator the URL keyboard (`inputmode="url"`) has
+no space key, so a person could not type the words of a search.
 
 ### Scrim
 
