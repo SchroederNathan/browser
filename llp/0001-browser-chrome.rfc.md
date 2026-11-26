@@ -296,17 +296,26 @@ keyboard. It is now the compact sheet at a width of 401 points.
 ### Sheet pull
 
 A finger that pulls an open sheet moves the middle surface with it (requirements 25 and 30): `pull`
-is the distance, and the surface takes it as a `translate` with the transition off. The sheet goes
-down without a limit and up as far as its full height. When the finger lifts, `pull` returns to 0
-and the surface's spring takes the sheet to its place:
+is the distance. The sheet goes down without a limit and up as far as its full height. When the
+finger lifts, `pull` returns to 0 and the sheet moves to its place from where the finger left it:
 
 - 64 points up (or half of the way it can grow, if that is less), or a flick up: the sheet becomes
   tall. A flick up wins over a distance pulled down.
 - 96 points down, or a flick down: a tall sheet returns to its resting height, and a resting sheet
   closes.
 
-Where the content scrolls, a pull on it scrolls it. A pull 64 points down past the content's top
-takes the same step down, once. A pull on the top row moves the sheet, except on the text field.
+One finger moves one thing: the sheet or its list, never both. A pull on the top row moves the
+sheet, except on the text field. Where the list scrolls, a pull up on it scrolls it. A pull down
+on it moves the sheet while the list is at its top (`listTop`), and scrolls the list otherwise.
+The list's `touch-action` is `pan-down` at its top and `pan-y` below it. The scroller reads it
+when a drag starts, so a drag down at the top is not the list's, and the surface's `pan` takes
+it. A drag that scrolls the list back to its top stays the list's until the finger lifts.
+
+The surface sits in `SheetPull`, a layer that takes `pull` as a `translate`. The surface keeps its
+own spring for its size and place. While the finger is down the layer has no transition. When the
+finger lifts, the layer returns on the spring that then moves the surface: `BarGrow`'s while the
+sheet stays open, `BarSettle`'s as it closes. The layer returns up while the surface moves down,
+on one spring, so the sheet moves on from the finger with no jump and no dip.
 
 A change of the screen's size (a fold, an unfold, a turn) closes an open sheet (requirement 31):
 the root's `resize` runs `screenResized`. The sheet's size and place belong to the old screen.
@@ -321,6 +330,16 @@ sheet either, so there is none.
 `[observed]` Exact's own drag for a sheet's height (`heightDragFor`) was tried first. On iOS it
 does not start on a button, and the sheets are made of buttons, so the sheet could be dragged only
 from the gaps between them. A `pan` hears a drag that starts on a button.
+
+`[observed]` On iOS (Exact c8a8c75), a node whose own `transition="none"` is removed keeps no
+transition: its style's transition does not come back. The first version turned the surface's
+transition off with `transition=(pull != 0 ? "none" : none)`, so on release the sheet jumped back
+to its place in one frame, and a closing sheet first jumped to its open place. `SheetPull` writes
+the transition on the layer in every state, so it never relies on the style's.
+
+`[observed]` The first version let the list take a pull down at its top and stepped the sheet down
+once the list was 64 points past its top. The list snapped back and the sheet jumped under the same
+finger. That rule is gone.
 
 *Agent decision.* The 64 and 96 points and the 600 points a second are a judgment.
 

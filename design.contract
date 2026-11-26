@@ -46,20 +46,33 @@ style BesideLowercase
 // The bar's three glass surfaces. One spring moves all of them: the middle surface as it grows
 // into a sheet, and the side buttons as they leave the screen. A surface grows with a small
 // bounce and returns faster with none. @ref LLP 0001#one-spring @ref LLP 0001#liquid-glass
-// A finger that pulls an open sheet moves the surface by `translate`, with the transition
-// off; when the finger lifts, the same spring takes the surface back or away.
-// @ref LLP 0001#sheet-pull
 style BarGrow
   backgroundMaterial="glass"
   border-width=0
   -exact-layout-transition="-exact-spring(300, 30, 1)"
-  transition="translate -exact-spring(300, 30, 1)"
 
 style BarSettle
   backgroundMaterial="glass"
   border-width=0
   -exact-layout-transition="-exact-spring(420, 41, 1)"
-  transition="translate -exact-spring(420, 41, 1)"
+
+// The layer around the middle surface that a finger pulls. It follows the finger by `translate`
+// with no transition. When the finger lifts, it returns on the spring that then moves the surface:
+// `BarGrow`'s while the sheet stays open, `BarSettle`'s as it closes. The two movements are
+// opposite and on one spring, so the sheet moves on from where the finger left it.
+// The transition is the layer's own and not a style's: on iOS, a node whose own
+// `transition="none"` is removed keeps no transition, and its style's does not come back.
+// @ref LLP 0001#sheet-pull
+component SheetPull
+  props
+    pull: number
+    open: bool
+    width: number
+    height: number
+  slot
+  view
+    box position="absolute" left=0 top=0 width=width height=height translate=`0px ${pull}px` transition=(pull != 0 ? "none" : open ? "translate -exact-spring(300, 30, 1)" : "translate -exact-spring(420, 41, 1)") pointer-events="none" testId="sheet-pull"
+      children
 
 // A snapshot of a page flying between the screen and its card. It is the largest thing that
 // moves, so it takes the longest. It moves by a transform from its top left corner, on a timed
