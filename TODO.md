@@ -51,6 +51,10 @@ Private tabs work: the left page of the pager above the tab grid (`app.contract`
 - [ ] Delete a tab's snapshots from `app:/cache` when the tab closes. Each tab has at most two files,
   `tab-<id>-0.png` and `tab-<id>-1.png`.
 - [ ] Reorder tabs by drag in the grid.
+- [ ] On the folded iPhone Duo the grid's second column is under the status rail at the top
+  (`safeAreaRight` is 84). The grid does not read the side safe areas yet.
+- [ ] When the Duo unfolds while the grid shows, the pager lands on the private page: `pagerStart`
+  holds the old screen's width.
 
 ## Search sheet
 
@@ -58,6 +62,8 @@ Private tabs work: the left page of the pager above the tab grid (`app.contract`
 - [ ] Favorites. The second design pass removed the site tiles from the sheet.
 - [ ] Let the person clear the recent entries.
 - [ ] Let the person choose the search engine. `addressOf` in `address.contract` uses Google.
+- [ ] A pull down on the search field does not move the sheet: the field keeps its own drags. A
+  pull anywhere else on the sheet closes it.
 
 ## Pages
 

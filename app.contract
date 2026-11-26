@@ -473,7 +473,7 @@ component ExactBrowser
           button press=pressMiddle class=Bare position="absolute" left=0 top=0 width=midW height=sideSize aria-label=(inTabs ? "New Tab" : `Address, ${hostOf(url)}`) testId="bar-middle"
         // The address: centred in the pill and in the page menu's top row, and on its way to the
         // field's text in the search sheet. @ref LLP 0001#address-flight
-        row position="absolute" left=(sheet == "search" ? sheetInsetLeft + 34 : open ? sheetInsetLeft + 16 : 0) top=(open ? 16 : 0) width=(sheet == "search" ? contentW - 98 : open ? contentW - 32 : midW) height=(open ? 52 : sideSize) align-items="center" justify-content=(sheet == "search" ? "flex-start" : "center") gap=6 pointer-events="none"
+        row position="absolute" left=(sheet == "search" ? sheetInsetLeft + 34 : open ? sheetInsetLeft + 16 : 0) top=(open ? 16 : 0) width=(sheet == "search" ? contentW - 100 : open ? contentW - 32 : midW) height=(open ? 52 : sideSize) align-items="center" justify-content=(sheet == "search" ? "flex-start" : "center") gap=6 pointer-events="none"
           if not open and not inTabs and url != ""
             box class=Fade display="flex"
               box class=BesideLowercase
