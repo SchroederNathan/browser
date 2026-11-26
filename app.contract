@@ -5,7 +5,7 @@ use Icon from "./icons.contract"
 use hostOf, isAddress, addressOf, shortAddress from "./address.contract"
 use Tab, TabPage, newTab from "./tabs.contract"
 use SheetField, SearchSheet, MenuSheet from "./sheets.contract"
-use Fly, SheetContent, SheetShell, Fade, BarGrow, BarSettle, PictureIn, PictureOut, BarFill, AddressHere, AddressAway, AddressIn, AddressOut, BesideLowercase, ScrimIn, ScrimOut, GridScreen, SegmentThumb, Thumbnail, ThumbnailFace, Bare from "./design.contract"
+use Fly, SheetContent, SheetShell, Fade, BarGrow, BarSettle, SheetPull, PictureIn, PictureOut, BarFill, AddressHere, AddressAway, AddressIn, AddressOut, BesideLowercase, ScrimIn, ScrimOut, GridScreen, SegmentThumb, Thumbnail, ThumbnailFace, Bare from "./design.contract"
 
 font "Inter"
   100 900 = "assets/fonts/InterVariable.ttf"
@@ -53,6 +53,9 @@ component ExactBrowser
   // An open sheet is at its resting height, or as tall as the screen allows after a pull up.
   // @ref LLP 0001#sheet-height
   state sheetTall = false
+  // The list in an open sheet is at its top. Then a pull down on it moves the sheet, and only a
+  // pull up scrolls it. @ref LLP 0001#sheet-pull
+  state listTop = true
   // The keyboard's height at each screen size, as "WxH height", the newest first.
   state keyboards: string[] = [] persist
   // A page's snapshot on its way between the screen and its card. "cover": it is over its page
@@ -256,6 +259,7 @@ component ExactBrowser
       composing = inTabs
       draft = inTabs ? "" : url
       sheetTall = false
+      listTop = true
       sheet = "search"
   action focusAddress
     focus("address")
@@ -266,6 +270,7 @@ component ExactBrowser
   action editAddress
     composing = false
     draft = url
+    listTop = true
     sheet = "search"
   // The sheet follows the finger: down without a limit, and up as far as its full height.
   action pullSheet(dx: number, dy: number)
@@ -283,17 +288,8 @@ component ExactBrowser
       composing = false
     sheetTall = sheetTaller and (up or (sheetTall and not down))
     pull = 0
-  // The sheet's content was pulled 64 points down past its top: the sheet takes one step down, as
-  // it does for a pull on a part that does not scroll. A sheet at rest that can grow does not
-  // scroll, so later events of the same pull do not take a second step.
-  action contentScrolled(x: number, y: number)
-    if open and y < -64
-      if sheetTall and sheetTaller
-        sheetTall = false
-      else if not sheetTaller
-        blur()
-        sheet = "none"
-        composing = false
+  action listScrolled(x: number, y: number)
+    listTop = y <= 0
   // The screen changed size: the device folded, unfolded or turned. An open sheet closes.
   // @ref LLP 0001#sheet-height
   action screenResized(width: number, height: number)
@@ -314,6 +310,7 @@ component ExactBrowser
           screen = "browse"
     else if not leaving
       sheetTall = false
+      listTop = true
       sheet = "menu"
   action closeSheet
     blur()
@@ -476,33 +473,35 @@ component ExactBrowser
 
       // The bar's three glass surfaces. Each keeps its place in the tree through every state, so
       // one spring carries it between them. @ref LLP 0001#one-spring
-      column class=(open ? BarGrow : BarSettle) pan=pullSheet panrelease=dropSheet touch-action="none" translate=`0px ${pull}px` transition=(pull != 0 ? "none" : none) color-scheme="light" position="absolute" left=midX bottom=midBottom width=midW height=midH border-radius=midRadius overflow="clip" -exact-glass-tint=(open ? "glass.sheet" : inTabs ? "glass.accent" : "transparent") box-shadow=(open ? "0 -12px 40px rgba(40, 10, 30, 0.18)" : inTabs ? "0 6px 16px rgba(0, 0, 0, 0.16)" : "0 8px 24px rgba(40, 10, 20, 0.18)") testId="bar-middle-surface"
-        box class=BarFill background-color="color.accent" opacity=(inTabs and not open ? 0.8 : 0)
-        if open
-          // What the sheet holds ends at the bottom of the screen, or at the keyboard's top. It
-          // scrolls where the sheet shows all of itself and cannot grow. @ref LLP 0001#sheet-height
-          column class=SheetShell position="absolute" left=sheetInsetLeft top=0 width=contentW height=(shown - viewport.keyboardHeight) padding-top="space-4" gap=(sheet == "search" ? 14 : 18)
-            column class=SheetContent flex-shrink=0 padding-left="space-4" padding-right="space-4"
-              SheetField(mode=sheet, draft=draft, canGoBack=(match active { case some(t) => t.canGoBack, case none => false }), canGoForward=(match active { case some(t) => t.canGoForward, case none => false }), edit=edit, submit=submit, fill=fill, goBack=goBack, goForward=goForward, copyLink=copyLink, reloadPage=reloadPage, editAddress=editAddress)
-            if sheet == "search"
-              scroll class=SheetContent flex=1 min-height=0 scroll=contentScrolled overflow-y=(sheetTall or not sheetTaller ? "scroll" : "hidden") padding-left="space-4" padding-right="space-4" padding-bottom=(keyboardUp ? 16 : viewport.safeAreaBottom + 16) testId="sheet-scroll"
-                SearchSheet(recents=recents, icons=icons, pick=pick, fill=fill)
-            else
-              scroll class=SheetContent flex=1 min-height=0 scroll=contentScrolled overflow-y=(sheetTall or not sheetTaller ? "scroll" : "hidden") padding-left="space-4" padding-right="space-4" padding-bottom=(viewport.safeAreaBottom + 16) testId="sheet-scroll"
-                MenuSheet(closeTab=closeCurrent, later=later)
-        else
-          button press=pressMiddle class=Bare position="absolute" left=0 top=0 width=midW height=sideSize aria-label=(inTabs ? "New Tab" : `Address, ${hostOf(url)}`) testId="bar-middle"
-        // The address: centred in the pill and in the page menu's top row, and on its way to the
-        // field's text in the search sheet. @ref LLP 0001#address-flight
-        row position="absolute" left=(sheet == "search" ? sheetInsetLeft + 34 : open ? sheetInsetLeft + 16 : 0) top=(open ? 16 : 0) width=(sheet == "search" ? contentW - 100 : open ? contentW - 32 : midW) height=(open ? 52 : sideSize) align-items="center" justify-content=(sheet == "search" ? "flex-start" : "center") gap=6 pointer-events="none"
-          if not open and not inTabs and url != ""
-            box class=Fade display="flex"
-              box class=BesideLowercase
-                Icon(name=(url.startsWith("https://") ? "lock" : "unlock"), size=13, color="-exact-label", weight=600)
-          box class=(sheet == "search" ? AddressAway : AddressHere)
-            text (sheet == "menu" ? shortAddress(url) : hostOf(url)) class=(inTabs ? AddressOut : AddressIn) color=(sheet == "menu" ? "color.text" : "-exact-label") min-width=0 line-clamp=1 testId="address-label"
-        box class=(inTabs and not open ? PictureIn : PictureOut)
-          Icon(name="plus", size=20, color="color.on-accent", weight=600)
+      // A finger that pulls the sheet moves this layer. The middle surface morphs inside it.
+      SheetPull(pull=pull, open=open, width=w, height=h)
+        column class=(open ? BarGrow : BarSettle) pan=pullSheet panrelease=dropSheet touch-action="none" pointer-events="auto" color-scheme="light" position="absolute" left=midX bottom=midBottom width=midW height=midH border-radius=midRadius overflow="clip" -exact-glass-tint=(open ? "glass.sheet" : inTabs ? "glass.accent" : "transparent") box-shadow=(open ? "0 -12px 40px rgba(40, 10, 30, 0.18)" : inTabs ? "0 6px 16px rgba(0, 0, 0, 0.16)" : "0 8px 24px rgba(40, 10, 20, 0.18)") testId="bar-middle-surface"
+          box class=BarFill background-color="color.accent" opacity=(inTabs and not open ? 0.8 : 0)
+          if open
+            // What the sheet holds ends at the bottom of the screen, or at the keyboard's top. It
+            // scrolls where the sheet shows all of itself and cannot grow. @ref LLP 0001#sheet-height
+            column class=SheetShell position="absolute" left=sheetInsetLeft top=0 width=contentW height=(shown - viewport.keyboardHeight) padding-top="space-4" gap=(sheet == "search" ? 14 : 18)
+              column class=SheetContent flex-shrink=0 padding-left="space-4" padding-right="space-4"
+                SheetField(mode=sheet, draft=draft, canGoBack=(match active { case some(t) => t.canGoBack, case none => false }), canGoForward=(match active { case some(t) => t.canGoForward, case none => false }), edit=edit, submit=submit, fill=fill, goBack=goBack, goForward=goForward, copyLink=copyLink, reloadPage=reloadPage, editAddress=editAddress)
+              if sheet == "search"
+                scroll class=SheetContent flex=1 min-height=0 scroll=listScrolled overflow-y=(sheetTall or not sheetTaller ? "scroll" : "hidden") touch-action=(listTop ? "pan-down" : "pan-y") padding-left="space-4" padding-right="space-4" padding-bottom=(keyboardUp ? 16 : viewport.safeAreaBottom + 16) testId="sheet-scroll"
+                  SearchSheet(recents=recents, icons=icons, pick=pick, fill=fill)
+              else
+                scroll class=SheetContent flex=1 min-height=0 scroll=listScrolled overflow-y=(sheetTall or not sheetTaller ? "scroll" : "hidden") touch-action=(listTop ? "pan-down" : "pan-y") padding-left="space-4" padding-right="space-4" padding-bottom=(viewport.safeAreaBottom + 16) testId="sheet-scroll"
+                  MenuSheet(closeTab=closeCurrent, later=later)
+          else
+            button press=pressMiddle class=Bare position="absolute" left=0 top=0 width=midW height=sideSize aria-label=(inTabs ? "New Tab" : `Address, ${hostOf(url)}`) testId="bar-middle"
+          // The address: centred in the pill and in the page menu's top row, and on its way to the
+          // field's text in the search sheet. @ref LLP 0001#address-flight
+          row position="absolute" left=(sheet == "search" ? sheetInsetLeft + 34 : open ? sheetInsetLeft + 16 : 0) top=(open ? 16 : 0) width=(sheet == "search" ? contentW - 100 : open ? contentW - 32 : midW) height=(open ? 52 : sideSize) align-items="center" justify-content=(sheet == "search" ? "flex-start" : "center") gap=6 pointer-events="none"
+            if not open and not inTabs and url != ""
+              box class=Fade display="flex"
+                box class=BesideLowercase
+                  Icon(name=(url.startsWith("https://") ? "lock" : "unlock"), size=13, color="-exact-label", weight=600)
+            box class=(sheet == "search" ? AddressAway : AddressHere)
+              text (sheet == "menu" ? shortAddress(url) : hostOf(url)) class=(inTabs ? AddressOut : AddressIn) color=(sheet == "menu" ? "color.text" : "-exact-label") min-width=0 line-clamp=1 testId="address-label"
+          box class=(inTabs and not open ? PictureIn : PictureOut)
+            Icon(name="plus", size=20, color="color.on-accent", weight=600)
 
       column class=(open ? BarGrow : BarSettle) color-scheme="light" position="absolute" left=leftX bottom=sideBottom width=sideSize height=sideSize border-radius=(sideSize / 2) overflow="clip" -exact-glass-tint=(inTabs ? "glass.control" : "transparent") testId="bar-left-surface"
         box class=BarFill background-color="color.surface-raised" opacity=(inTabs ? 0.7 : 0)

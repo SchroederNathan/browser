@@ -60,6 +60,17 @@ test "a pull up makes a sheet as tall as the screen allows, and a pull down retu
   expect state sheetTall == false
   expect state sheet == "search"
 
+test "a pull down on a tall sheet's list moves the sheet, and the list stays at its top"
+  tap "bar-right"
+  clock settle
+  tap "menu-sheet" drag 0 -120
+  clock settle
+  expect state sheetTall == true
+  tap "menu-sheet" drag 0 160
+  clock settle
+  expect state sheetTall == false
+  expect state sheet == "menu"
+
 test "a control that is not built yet changes nothing"
   tap "bar-right"
   clock settle
