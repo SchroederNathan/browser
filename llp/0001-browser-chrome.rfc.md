@@ -69,6 +69,7 @@ These come from the request of 2026-11-26. `[confirmed]` Nathan Schroeder, 2026-
     moves to the field, Back and Forward leave to the leading side, and Copy Link and Reload give
     way to the field's own control.
 25. A pull down closes a sheet. A press beside the sheet still closes it.
+26. The bar is over the page at every moment of the flight between a page and its card.
 
 ## Design system
 
@@ -104,10 +105,10 @@ Motion follows "4 principles of transition" (requirement 16). The values are in 
 
 | Principle | Here |
 | --- | --- |
-| Duration follows size | An icon or a label takes 150 to 220 ms. A bar surface takes a spring that settles in about 400 ms. A page's snapshot, the largest thing that moves, takes the slowest spring. |
+| Duration follows size | An icon or a label takes 150 to 220 ms. A bar surface takes a spring that settles in about 400 ms. A page's snapshot, the largest thing that moves, takes 450 ms. |
 | An entrance is longer than its exit | A picture blurs in over 220 ms and out over 150 ms. Sheet content enters over 300 ms and leaves over 120 ms. The scrim enters over 300 ms and leaves over 200 ms. A surface grows on `-exact-spring(300, 30, 1)` and returns on the stiffer `-exact-spring(420, 41, 1)`. |
 | Entrances and exits ease out | Entrances use `cubic-bezier(0.22, 1, 0.36, 1)`, the article's smooth ease-out. Exits use `ease-out`. |
-| A morph takes a subtle spring | The growing spring has a damping ratio of 0.87, a small bounce. The returning spring has none, and the page's spring (damping ratio 0.93) has almost none. |
+| A morph takes a subtle spring | The growing spring has a damping ratio of 0.87, a small bounce. The returning spring has none. |
 | Scale follows size, inversely | A picture, the smallest thing, scales from 0.9. Sheet content does not scale. |
 | Movement shows where a thing comes from | Sheet content rises 8 points. A sheet grows out of the pill that opens it, and a page shrinks into its own card. |
 
@@ -332,18 +333,35 @@ content passes under the bar.
 
 ## Tab flights
 
-A page and its card share the name `page-<id>` (`sharedElement`). When the screen changes, one
-holder is destroyed and the other is created in the same commit, and the new one flies from the old
-one's place on the `Fly` spring.
+A page's snapshot flies between the screen and its card under the bar, so the bar is over it at
+every moment (requirement 26). The snapshot is one image in the root, after the grid and before the
+bar's surfaces. It is as large as the screen and moves by a transform from its top left corner: a
+card's preview has the screen's aspect ratio, so one scale and one offset put it exactly on the
+card. `flight` says where it is, and the style `Fly` moves it over 450 ms on the smooth ease-out.
+`[observed]` The web host skips a spring on a transform's transition, so `Fly` is not a spring.
 
-- To the grid: the tabs button first asks for a snapshot of the page (`captureScreenshot`). The
-  grid shows when the snapshot arrives, or after 300 ms. The card's image is that snapshot, so it
-  flies from the full screen into its card.
-- From the grid: a snapshot image covers the page while it flies out of its card. After 700 ms the
-  image becomes transparent and the live page is under it. The grid stays behind the flight and
-  then fades.
+- To the grid: the tabs button asks for a snapshot of the page (`captureScreenshot`). The snapshot
+  is placed over its page ("cover") and the grid shows when its picture is drawn, or after 300 ms
+  ("drop"). One frame later the card's place is read with `frame()`, and the snapshot flies to it
+  ("down").
+- From the grid: the card's place is read at the press and the snapshot is placed on it ("lift").
+  One frame later the page takes the grid's place under it, and the snapshot flies to the screen
+  ("up"). The grid stays behind the flight and then fades.
 
-`[observed]` On the simulator the snapshot arrived about 50 ms after the press.
+700 ms after a flight starts the snapshot is removed. The card's own picture, or the live page, is
+under it.
+
+`[observed]` The first version used a shared element (`sharedElement`): the page and its card had
+one name, and the host flew the new holder from the old one's place. The iOS host lifts a flying
+element into a layer above every sibling of the app's root
+(`host/apple/Sources/ExactFlights/IOS/FlightsIOS.swift`, `setPaintForeground()`), and no `z-index`
+goes above that layer. So the flying page covered the bar until it landed.
+
+`[observed]` Without the wait for the picture, the grid showed for one frame before the new
+snapshot was drawn over it.
+
+*Agent decision.* The snapshot's bottom corners take the card's radius at the card's size, and the
+value changes at once when a flight starts: a radius does not animate.
 
 ## Tab pager
 

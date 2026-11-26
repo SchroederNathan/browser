@@ -63,10 +63,11 @@ test "the tabs button shows the grid, and Done returns to the page"
   expect text "count" == "1"
   expect tree has "tab-1"
   tap "bar-right"
+  clock +100
   expect state screen == "browse"
-  expect state landing == "1"
+  expect tree has "page-cover"
   clock +800
-  expect state landing == ""
+  expect tree missing "page-cover"
 
 test "the plus button opens the search sheet for a new tab"
   tap "bar-left"

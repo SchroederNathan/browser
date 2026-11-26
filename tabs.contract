@@ -1,7 +1,7 @@
 // A tab, its card, and one page of the tab grid (Paper: "04 Tab Grid"). @ref LLP 0001#tab-grid
 use Icon from "./icons.contract"
 use Favicon, hostOf, initial from "./address.contract"
-use Fly, Bare from "./design.contract"
+use Bare from "./design.contract"
 
 shape Tab
   id: string
@@ -43,11 +43,10 @@ component TabCard
           text nameOf(tab) font-size=14 font-weight=500 color="color.text" flex=1 min-width=0 text-align="left" line-clamp=1
         button press=close(tab.id) class=Bare width=44 height=44 display="flex" align-items="center" justify-content="center" aria-label=`Close ${nameOf(tab)}` testId=`tab-close-${tab.id}`
           Icon(name="close", size=12, color="color.text-secondary", weight=700)
-      button press=open(tab.id) class=Bare width=width height=previewHeight flex-shrink=0 aria-label=nameOf(tab) testId=`tab-preview-${tab.id}`
+      // The page's snapshot flies between this box and the screen (app.contract).
+      button id=`preview-${tab.id}` press=open(tab.id) class=Bare width=width height=previewHeight flex-shrink=0 aria-label=nameOf(tab) testId=`tab-preview-${tab.id}`
         if tab.shot != ""
-          image tab.shot sharedElement=`page-${tab.id}` class=Fly width=width height=previewHeight object-fit="cover" object-position="top" alt=""
-        else
-          box sharedElement=`page-${tab.id}` class=Fly width=width height=previewHeight background-color="color.background"
+          image tab.shot width=width height=previewHeight object-fit="cover" object-position="top" alt=""
 
 // One page of the pager: the regular tabs, or the private ones. @ref LLP 0001#tab-pager
 component TabPage
