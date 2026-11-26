@@ -46,7 +46,7 @@ style BesideLowercase
 // The bar's three glass surfaces. One spring moves all of them: the middle surface as it grows
 // into a sheet, and the side buttons as they leave the screen. A surface grows with a small
 // bounce and returns faster with none. @ref LLP 0001#one-spring @ref LLP 0001#liquid-glass
-// A finger that pulls an open sheet down moves the surface by `translate`, with the transition
+// A finger that pulls an open sheet moves the surface by `translate`, with the transition
 // off; when the finger lifts, the same spring takes the surface back or away.
 // @ref LLP 0001#sheet-pull
 style BarGrow
@@ -63,7 +63,7 @@ style BarSettle
 
 // A snapshot of a page flying between the screen and its card. It is the largest thing that
 // moves, so it takes the longest. It moves by a transform from its top left corner, on a timed
-// ease and not a spring: the web host does not run a spring on a transform's transition.
+// ease and not a spring: on the web host `verify` reported the spring of this style as skipped.
 // @ref LLP 0001#tab-flights
 style Fly
   transform-origin="0% 0%"

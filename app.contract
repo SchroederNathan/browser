@@ -151,15 +151,17 @@ component ExactBrowser
 
   task leave when leaving
     after(300, showGrid)
-  // One frame after the grid is laid out, its card can be measured.
+  // 30 ms after the grid is shown it is laid out, and its card can be measured. A flight ends 700
+  // ms after it starts: `Fly` takes 450 ms.
   task settle when flight == "drop"
     after(30, shrink)
   task takeOff when flight == "lift"
     after(30, rise)
   task land when flight == "down" or flight == "up" key=flight
     after(700, landed)
-  // The field takes focus after the sheet has grown: bringing the keyboard up stops the frames
-  // of a spring that is still moving. @ref LLP 0001#sheet-focus
+  // The field takes focus after the sheet has grown (`BarGrow` is almost at rest after 250 ms):
+  // bringing the keyboard up stops the frames of a spring that is still moving.
+  // @ref LLP 0001#sheet-focus
   task focusField when sheet == "search"
     after(250, focusAddress)
   task learnKeyboard when sheet == "search" and keyboardUp and viewport.keyboardHeight != keyboardSeen
@@ -248,11 +250,13 @@ component ExactBrowser
     flyY = 0
     flyScale = 1
     flight = "up"
+  // A press while the page's snapshot is taken does nothing: the grid is about to show.
   action pressMiddle
-    composing = inTabs
-    draft = inTabs ? "" : url
-    sheetTall = false
-    sheet = "search"
+    if not leaving
+      composing = inTabs
+      draft = inTabs ? "" : url
+      sheetTall = false
+      sheet = "search"
   action focusAddress
     focus("address")
     selectText("address")
@@ -272,7 +276,7 @@ component ExactBrowser
   // height and a resting sheet closes.
   action dropSheet(vx: number, vy: number)
     let up = pull < 0 - min(64, (fullShown - restShown) / 2) or vy < -600
-    let down = pull > 96 or vy > 600
+    let down = not up and (pull > 96 or vy > 600)
     if open and down and not (sheetTall and sheetTaller)
       blur()
       sheet = "none"
@@ -280,16 +284,18 @@ component ExactBrowser
     sheetTall = sheetTaller and (up or (sheetTall and not down))
     pull = 0
   // The sheet's content was pulled 64 points down past its top: the sheet takes one step down, as
-  // it does for a pull on a part that does not scroll.
+  // it does for a pull on a part that does not scroll. A sheet at rest that can grow does not
+  // scroll, so later events of the same pull do not take a second step.
   action contentScrolled(x: number, y: number)
     if open and y < -64
       if sheetTall and sheetTaller
         sheetTall = false
-      else
+      else if not sheetTaller
         blur()
         sheet = "none"
         composing = false
   // The screen changed size: the device folded, unfolded or turned. An open sheet closes.
+  // @ref LLP 0001#sheet-height
   action screenResized(width: number, height: number)
     if open
       blur()
@@ -306,7 +312,7 @@ component ExactBrowser
           flight = "lift"
         else
           screen = "browse"
-    else
+    else if not leaving
       sheetTall = false
       sheet = "menu"
   action closeSheet
@@ -399,6 +405,9 @@ component ExactBrowser
       screen = "browse"
   action landed
     flight = "none"
+    flyX = 0
+    flyY = 0
+    flyScale = 1
   action closeTab(id: string)
     let rest = recent.filter(t => t.id != id and t.private == privatePage)
     tabs = tabs.filter(t => t.id != id)
@@ -467,31 +476,6 @@ component ExactBrowser
 
       // The bar's three glass surfaces. Each keeps its place in the tree through every state, so
       // one spring carries it between them. @ref LLP 0001#one-spring
-      column class=(open ? BarGrow : BarSettle) color-scheme="light" position="absolute" left=leftX bottom=sideBottom width=sideSize height=sideSize border-radius=(sideSize / 2) overflow="clip" -exact-glass-tint=(inTabs ? "glass.control" : "transparent") testId="bar-left-surface"
-        box class=BarFill background-color="color.surface-raised" opacity=(inTabs ? 0.7 : 0)
-        button press=pressLeft class=Bare position="absolute" left=0 top=0 width=sideSize height=sideSize aria-label=(inTabs ? "Close All Tabs" : "Tabs") testId="bar-left"
-          box class=(inTabs ? PictureOut : PictureIn)
-            // The two most recent tabs, the front one on top.
-            box width=26 height=26 position="relative"
-              box class=Thumbnail left=1 top=7 rotate="-18deg" background-color="thumbnail.behind"
-                box class=ThumbnailFace
-                  match recent.at(1)
-                    case some(t)
-                      if t.shot != ""
-                        image t.shot width=15 height=17 object-fit="cover" object-position="top" alt="" opacity=0.85
-                    case none
-                      box
-              box class=Thumbnail left=9 top=1 rotate="12deg" background-color="paper-white"
-                box class=ThumbnailFace
-                  match recent.at(0)
-                    case some(t)
-                      if t.shot != ""
-                        image t.shot width=15 height=17 object-fit="cover" object-position="top" alt=""
-                    case none
-                      box
-          box class=(inTabs ? PictureIn : PictureOut)
-            Icon(name="close-all", size=19, color="color.text", weight=500)
-
       column class=(open ? BarGrow : BarSettle) pan=pullSheet panrelease=dropSheet touch-action="none" translate=`0px ${pull}px` transition=(pull != 0 ? "none" : none) color-scheme="light" position="absolute" left=midX bottom=midBottom width=midW height=midH border-radius=midRadius overflow="clip" -exact-glass-tint=(open ? "glass.sheet" : inTabs ? "glass.accent" : "transparent") box-shadow=(open ? "0 -12px 40px rgba(40, 10, 30, 0.18)" : inTabs ? "0 6px 16px rgba(0, 0, 0, 0.16)" : "0 8px 24px rgba(40, 10, 20, 0.18)") testId="bar-middle-surface"
         box class=BarFill background-color="color.accent" opacity=(inTabs and not open ? 0.8 : 0)
         if open
@@ -520,9 +504,34 @@ component ExactBrowser
         box class=(inTabs and not open ? PictureIn : PictureOut)
           Icon(name="plus", size=20, color="color.on-accent", weight=600)
 
+      column class=(open ? BarGrow : BarSettle) color-scheme="light" position="absolute" left=leftX bottom=sideBottom width=sideSize height=sideSize border-radius=(sideSize / 2) overflow="clip" -exact-glass-tint=(inTabs ? "glass.control" : "transparent") testId="bar-left-surface"
+        box class=BarFill background-color="color.surface-raised" opacity=(inTabs ? 0.7 : 0)
+        button press=pressLeft class=Bare position="absolute" left=0 top=0 width=sideSize height=sideSize aria-label=(inTabs ? "Close All Tabs" : "Tabs") inert=open testId="bar-left"
+          box class=(inTabs ? PictureOut : PictureIn)
+            // The two most recent tabs, the front one on top.
+            box width=26 height=26 position="relative"
+              box class=Thumbnail left=1 top=7 rotate="-18deg" background-color="thumbnail.behind"
+                box class=ThumbnailFace
+                  match recent.at(1)
+                    case some(t)
+                      if t.shot != ""
+                        image t.shot width=15 height=17 object-fit="cover" object-position="top" alt="" opacity=0.85
+                    case none
+                      box
+              box class=Thumbnail left=9 top=1 rotate="12deg" background-color="paper-white"
+                box class=ThumbnailFace
+                  match recent.at(0)
+                    case some(t)
+                      if t.shot != ""
+                        image t.shot width=15 height=17 object-fit="cover" object-position="top" alt=""
+                    case none
+                      box
+          box class=(inTabs ? PictureIn : PictureOut)
+            Icon(name="close-all", size=19, color="color.text", weight=500)
+
       column class=(open ? BarGrow : BarSettle) color-scheme="light" position="absolute" left=rightX bottom=sideBottom width=sideSize height=sideSize border-radius=(sideSize / 2) overflow="clip" -exact-glass-tint=(inTabs ? "glass.control" : "transparent") testId="bar-right-surface"
         box class=BarFill background-color="color.surface-raised" opacity=(inTabs ? 0.7 : 0)
-        button press=pressRight class=Bare position="absolute" left=0 top=0 width=sideSize height=sideSize aria-label=(inTabs ? "Done" : "Page Menu") testId="bar-right"
+        button press=pressRight class=Bare position="absolute" left=0 top=0 width=sideSize height=sideSize aria-label=(inTabs ? "Done" : "Page Menu") inert=open testId="bar-right"
           box class=(inTabs ? PictureOut : PictureIn)
             Icon(name="chevron-up", size=17, color="-exact-label", weight=600)
           box class=(inTabs ? PictureIn : PictureOut)

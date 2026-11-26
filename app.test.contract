@@ -81,6 +81,16 @@ test "the tabs button shows the grid, and Done returns to the page"
   clock +800
   expect tree missing "page-cover"
 
+test "a press on the bar while the grid is about to show opens no sheet"
+  tap "bar-left"
+  tap "bar-middle"
+  tap "bar-right"
+  clock +400
+  clock settle
+  expect state sheet == "none"
+  expect state screen == "tabs"
+  expect tree has "tab-1"
+
 test "the plus button opens the search sheet for a new tab"
   tap "bar-left"
   clock +400
@@ -96,6 +106,8 @@ test "the plus button opens the search sheet for a new tab"
   expect state tabs.length == 2
   expect state tabs.1.url == "https://example.com"
   expect state current == "2"
+  clock +800
+  expect state flyScale == 1
 
 test "words in the field search, and are kept as a recent search"
   tap "bar-middle"

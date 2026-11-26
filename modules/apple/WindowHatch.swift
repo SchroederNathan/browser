@@ -12,22 +12,27 @@ import AppKit
 import UIKit
 #endif
 
+#if os(iOS)
+private var verticalBarIsOff = false
+#endif
+
 /// When the hatches connect (`window.isNew`), and when its size or safe area changes.
 func windowHatch(_ window: ExactWindow) {
     #if os(iOS)
-    guard window.isNew, let root = window.window?.rootViewController else { return }
+    // Once: every call tries until the window has its root view controller.
+    guard !verticalBarIsOff, let root = window.window?.rootViewController else { return }
     if #available(iOS 27.1, *) {
-        // UIKit asks the window's root view controller, whose class is Exact's and has no setting
-        // for this. The answer is added to that class; a plain UIViewController is left alone.
-        let kind: AnyClass = type(of: root)
-        guard kind != UIViewController.self else { return }
+        // UIKit asks the root view controller, or the controller of the nearest presentation: an
+        // alert brought the vertical bar back while it showed. Exact owns the root controller and
+        // UIKit owns an alert's, so the answer replaces UIViewController's own, for every one.
         let disabled: @convention(block) (AnyObject) -> Int = { _ in UIVerticalBarBehavior.disabled.rawValue }
-        class_replaceMethod(kind, #selector(getter: UIViewController.preferredVerticalBarBehavior), imp_implementationWithBlock(disabled), "q@:")
+        class_replaceMethod(UIViewController.self, #selector(getter: UIViewController.preferredVerticalBarBehavior), imp_implementationWithBlock(disabled), "q@:")
         root.setNeedsUpdateOfVerticalBarConfiguration()
+        verticalBarIsOff = true
     }
     #endif
 }
 
-/// The session is leaving the window: the class keeps its answer for the life of the app.
+/// The session is leaving the window: UIViewController keeps the answer for the life of the app.
 func windowHatchEnded(_ window: ExactWindow) {
 }

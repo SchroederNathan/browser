@@ -127,7 +127,7 @@ Motion follows "4 principles of transition" (requirement 16). The values are in 
 ## One spring
 
 Each bar surface is one `column` with the style `BarGrow` or `BarSettle`. Its `left`, `bottom`,
-`width`, `height` and `border-radius` are derives of `screen` and `sheet`. Both styles carry an
+`width`, `height` and `border-radius` are derives of `screen`, `sheet` and `sheetTall`. Both styles carry an
 `-exact-layout-transition` spring, so a change of the laid-out box moves on that spring.
 
 A surface takes `BarGrow` while a sheet is open and `BarSettle` otherwise, so all three surfaces
@@ -192,11 +192,12 @@ Values are from the Paper screens. `[observed]`
 | Regular (unfolded Duo) | 381 wide, centred, 32 (portrait) or 24 (landscape) from the bottom | 401 wide, centred, attached to the bottom, radius 32 |
 | Book fold (half-open Duo) | As regular, centred in the trailing half | As regular, in the trailing half |
 
-*Agent decision.* A compact sheet reaches 44 points below the screen. Its four corners then share
-one radius, and the bottom corners are never on screen.
+*Agent decision.* A sheet reaches 44 points below the screen. Its four corners then share one
+radius, and the bottom corners are never on screen.
 
-*Agent decision.* The compact search sheet is `min(304 + keyboard, height - 118)` high and the
-compact page menu is `min(640, height - 74)`. Both give the Paper heights on the iPhone frame
+*Agent decision.* At rest the search sheet shows `min(304 + keyboard, height - 118)` points and
+the page menu shows `min(640, height - 74)`, and neither shows more than the full height (see
+"Sheet height"). Both give the Paper heights on the iPhone frame
 (640) and on the folded frame (560 and 604).
 
 ## Sheets
@@ -299,12 +300,16 @@ is the distance, and the surface takes it as a `translate` with the transition o
 down without a limit and up as far as its full height. When the finger lifts, `pull` returns to 0
 and the surface's spring takes the sheet to its place:
 
-- 64 points up, or a flick up: the sheet becomes tall.
+- 64 points up (or half of the way it can grow, if that is less), or a flick up: the sheet becomes
+  tall. A flick up wins over a distance pulled down.
 - 96 points down, or a flick down: a tall sheet returns to its resting height, and a resting sheet
   closes.
 
 Where the content scrolls, a pull on it scrolls it. A pull 64 points down past the content's top
-takes the same step down. A pull on the top row always moves the sheet.
+takes the same step down, once. A pull on the top row moves the sheet, except on the text field.
+
+A change of the screen's size (a fold, an unfold, a turn) closes an open sheet (requirement 31):
+the root's `resize` runs `screenResized`. The sheet's size and place belong to the old screen.
 
 The surface has `touch-action="none"`, so the browser leaves it the drag on the web host.
 
@@ -350,10 +355,20 @@ safe area keeps that side clear: the simulator reported `safeAreaRight` 84 and `
 page then lost that width. The app turns the vertical bar off (requirement 28): the status bar is
 at the top again, and a page is the full width.
 
-UIKit asks the window's root view controller for `preferredVerticalBarBehavior` (iOS 27.1), and
-`UIVerticalBarBehavior.disabled` turns the bar off. Exact owns that controller and has no setting
-for it, so `modules/apple/WindowHatch.swift` adds the answer to the controller's class when the
-window connects.
+UIKit asks a view controller for `preferredVerticalBarBehavior` (iOS 27.1), and
+`UIVerticalBarBehavior.disabled` turns the bar off. It asks the window's root view controller, or
+the controller of the nearest presentation. Exact owns the root controller and has no setting for
+this, and UIKit owns an alert's controller. So `modules/apple/WindowHatch.swift` replaces
+`UIViewController`'s own answer, once, when the window connects: every controller in the app
+answers `disabled`.
+
+`[observed]` With the answer on the root controller's class only, the vertical bar came back while
+the Close All alert showed, and went away again after it. With the answer on `UIViewController`
+the status bar stays at the top through the alert.
+
+*Agent decision.* UIKit's header says to turn the vertical bar off for a layout that horizontal bars
+serve better, and to keep the choice stable. The app turns it off for the whole app, by the request
+(requirement 28).
 
 `[observed]` With the bar off the folded Duo simulator reports `safeAreaTop` 82 and no side safe
 area. The sheet insets (see "Sheet insets") are then 0 there; they still apply wherever a side safe
@@ -396,7 +411,9 @@ show under the browser's bar. A fixed toast that does not reach both sides did n
 
 *Agent decision.* The hatch gives the strip's view an empty mask when WebKit adds it. It finds the
 view by its class name and by its place in the lower half of the web view, and calls no private
-method. The view at the top edge is left, so a fixed header's colour still fills the status bar. If
+method. `[observed]` On the simulator the strip was gone on a first load, after a navigation and
+in a new tab (a page with a fixed bar along its bottom edge). The view at the top edge is left, so a
+fixed header's colour still fills the status bar. If
 WebKit renames the class, the strip shows again and nothing else changes. The other choices were to
 keep the strip, as Safari does, or to remove the bottom inset, which puts a page's fixed bottom
 content under the bar again.
@@ -408,7 +425,13 @@ every moment (requirement 26). The snapshot is one image in the root, after the 
 bar's surfaces. It is as large as the screen and moves by a transform from its top left corner: a
 card's preview has the screen's aspect ratio, so one scale and one offset put it exactly on the
 card. `flight` says where it is, and the style `Fly` moves it over 450 ms on the smooth ease-out.
-`[observed]` The web host skips a spring on a transform's transition, so `Fly` is not a spring.
+`[observed]` On the web host `verify` reported the spring on this style's transition as skipped,
+so `Fly` is not a spring.
+
+`flyX`, `flyY` and `flyScale` return to the whole screen when a flight ends, so the next snapshot
+starts over its page. A press on the pill or the chevron does nothing while the tabs button waits
+for the snapshot: `[observed]` on the web host that press opened a sheet over the grid that was
+about to show, and an address entered there left the grid over the page.
 
 - To the grid: the tabs button asks for a snapshot of the page (`captureScreenshot`). The snapshot
   is placed over its page ("cover") and the grid shows when its picture is drawn, or after 300 ms
