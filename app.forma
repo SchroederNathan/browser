@@ -55,6 +55,9 @@ theme
   glass.accent = rgb(23 23 23 / 0.88)  scheme=fixed
   // The tab behind the front one in the tabs button.
   thumbnail.behind = rgb(255 255 255 / 0.55)  scheme=fixed
+  // A card's drop shadow and hairline ring in the tabs button.
+  thumbnail.shadow = rgb(0 0 0 / 0.32)  scheme=fixed
+  thumbnail.ring = rgb(0 0 0 / 0.22)  scheme=fixed
   // The dark wash over the page behind an open sheet.
   scrim.tint = rgb(0 0 0 / 0.32)  scheme=fixed
 

@@ -63,7 +63,8 @@ style Fly
 
 // A picture on a surface of the bar (an icon, the plus). When the surface changes its job, the
 // old picture blurs out as the new one blurs in. A blur animates only as a transition, so both
-// stay mounted and trade places.
+// stay mounted and trade places. A picture at rest has no filter: under any filter, also
+// blur(0px), the iOS host draws no outer shadow for what is inside. @ref LLP 0001#tabs-button
 style PictureIn
   position="absolute"
   left=0
@@ -75,7 +76,7 @@ style PictureIn
   justify-content="center"
   pointer-events="none"
   opacity=1
-  filter="blur(0px)"
+  filter="none"
   scale=1
   transition="opacity 220ms cubic-bezier(0.22, 1, 0.36, 1), filter 220ms cubic-bezier(0.22, 1, 0.36, 1), scale 220ms cubic-bezier(0.22, 1, 0.36, 1)"
 
@@ -189,6 +190,23 @@ style SegmentThumb
   box-shadow="0 1px 3px rgba(0, 0, 0, 0.08)"
   animation="thumb-slide 1s linear both"
   animation-timeline="--pager"
+
+// A tab's small card in the tabs button. The card casts the shadow and its face clips the
+// snapshot, so the shadow is not clipped with it. The shadow and the hairline ring keep a white
+// snapshot readable over a white page. @ref LLP 0001#tabs-button
+style Thumbnail
+  position="absolute"
+  width=15
+  height=17
+  border-radius=4
+  transform-origin="0% 0%"
+  box-shadow="0 1px 3px thumbnail.shadow, 0 0 0 0.5px thumbnail.ring"
+
+style ThumbnailFace
+  width=15
+  height=17
+  border-radius=4
+  overflow="clip"
 
 // A raised group of controls inside a sheet.
 style Group

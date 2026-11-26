@@ -5,7 +5,7 @@ use Icon from "./icons.contract"
 use hostOf, isAddress, addressOf, shortAddress from "./address.contract"
 use Tab, TabPage, newTab from "./tabs.contract"
 use SearchSheet, MenuSheet from "./sheets.contract"
-use Fly, SheetContent, Fade, BarGrow, BarSettle, PictureIn, PictureOut, BarFill, AddressIn, AddressOut, BesideLowercase, ScrimIn, ScrimOut, GridScreen, SegmentThumb, Bare from "./design.contract"
+use Fly, SheetContent, Fade, BarGrow, BarSettle, PictureIn, PictureOut, BarFill, AddressIn, AddressOut, BesideLowercase, ScrimIn, ScrimOut, GridScreen, SegmentThumb, Thumbnail, ThumbnailFace, Bare from "./design.contract"
 
 font "Inter"
   100 900 = "assets/fonts/InterVariable.ttf"
@@ -347,20 +347,22 @@ component ExactBrowser
           box class=(inTabs ? PictureOut : PictureIn)
             // The two most recent tabs, the front one on top.
             box width=26 height=26 position="relative"
-              box position="absolute" left=1 top=7 width=15 height=17 border-radius=4 rotate="-18deg" transform-origin="0% 0%" overflow="clip" background-color="thumbnail.behind"
-                match recent.at(1)
-                  case some(t)
-                    if t.shot != ""
-                      image t.shot width=15 height=17 object-fit="cover" object-position="top" alt="" opacity=0.85
-                  case none
-                    box
-              box position="absolute" left=9 top=1 width=15 height=17 border-radius=4 rotate="12deg" transform-origin="0% 0%" overflow="clip" background-color="paper-white" box-shadow="0 2px 4px rgba(0, 0, 0, 0.18)"
-                match recent.at(0)
-                  case some(t)
-                    if t.shot != ""
-                      image t.shot width=15 height=17 object-fit="cover" object-position="top" alt=""
-                  case none
-                    box
+              box class=Thumbnail left=1 top=7 rotate="-18deg" background-color="thumbnail.behind"
+                box class=ThumbnailFace
+                  match recent.at(1)
+                    case some(t)
+                      if t.shot != ""
+                        image t.shot width=15 height=17 object-fit="cover" object-position="top" alt="" opacity=0.85
+                    case none
+                      box
+              box class=Thumbnail left=9 top=1 rotate="12deg" background-color="paper-white"
+                box class=ThumbnailFace
+                  match recent.at(0)
+                    case some(t)
+                      if t.shot != ""
+                        image t.shot width=15 height=17 object-fit="cover" object-position="top" alt=""
+                    case none
+                      box
           box class=(inTabs ? PictureIn : PictureOut)
             Icon(name="close-all", size=19, color="color.text", weight=500)
 

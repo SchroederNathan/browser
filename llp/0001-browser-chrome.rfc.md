@@ -60,6 +60,8 @@ These come from the request of 2026-11-26. `[confirmed]` Nathan Schroeder, 2026-
     iPhone Duo. The sheet keeps its box, and its content is inset.
 20. The control above the tab grid has padding between it and the top of the screen on every
     device.
+21. Each of the two cards in the tabs button has a shadow, so a white snapshot can be seen over a
+    white page.
 
 ## Design system
 
@@ -135,6 +137,21 @@ over the glass at 0.8 and 0.7.
 
 *Agent decision.* The tint alphas (0.78, 0.7, 0.88) and the fill alphas are a judgment. The design draws these surfaces
 as flat fills (`neutral-100`, `neutral-200`, `neutral-900`); the alphas let the page show through.
+
+## Tabs button
+
+The tabs button shows the two most recent tabs as two small cards (requirement 5). Each card has a
+soft drop shadow and a hairline ring (requirement 21): the style `Thumbnail`, with the colours
+`thumbnail.shadow` and `thumbnail.ring`. The card casts the shadow and a face inside it clips the
+snapshot, because a box that clips also clips its own shadow.
+
+`[observed]` On the iOS host a `box-shadow` is not drawn for a box inside an ancestor that has a
+`filter`, and `blur(0px)` counts. The same card showed its shadow outside `PictureIn` and none
+inside it. So `PictureIn` has `filter="none"` at rest. The transition to and from `blur(6px)` still
+runs.
+
+*Agent decision.* The shadow values (black at 32%, 3 points of blur; a ring of black at 22%) are a
+judgment. `[observed]` Both cards can be seen over a white page and over a dark page.
 
 ## Bar geometry
 
