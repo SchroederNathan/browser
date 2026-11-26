@@ -1,30 +1,73 @@
-// The two sheets the bar's middle surface grows into (Paper: "02 Search", "03 Page Menu").
+// The two sheets the bar's middle surface grows into (Paper: "02 Search", "03 Page Menu"), and
+// the top row they share.
 // @ref LLP 0001#sheets
 use Icon from "./icons.contract"
 use Favicon, hostOf, initial, isAddress, shortAddress, faviconOf from "./address.contract"
-use TypeBase, TypeXs, Group, Bare from "./design.contract"
+use TypeBase, TypeXs, Group, Bare, FieldText, PictureIn, PictureOut, FieldResting, FieldEditing, LeadingIn, LeadingOut, TrailingIn, TrailingOut from "./design.contract"
 
-component SearchSheet
+// The top row of both sheets. It is one row through both, so a press on the address in the page
+// menu turns the menu into the search sheet without a cut: Back and Forward leave to the leading
+// side, Copy Link and Reload give way to the field's trailing control, and the row takes the
+// field's ring. @ref LLP 0001#sheet-field
+component SheetField
   props
+    // "search": the row is the field. "menu": it holds the page menu's controls.
+    mode: string
     draft: string
-    // What the person entered before, the newest first: an address or the words of a search.
-    recents: string[]
-    icons: string[]
+    canGoBack: bool
+    canGoForward: bool
     edit: action
     submit: action
+    fill: action
+    goBack: action
+    goForward: action
+    copyLink: action
+    reloadPage: action
+    editAddress: action
+  derive editing = mode == "search"
+  view
+    box class=(editing ? FieldEditing : FieldResting) position="relative" height=52 flex-shrink=0 testId="sheet-field"
+      row class=(editing ? LeadingOut : LeadingIn) position="absolute" left=8 top=6 inert=editing
+        button press=goBack disabled=(not canGoBack) class=Bare width=40 height=40 display="flex" align-items="center" justify-content="center" aria-label="Back" testId="menu-back"
+          Icon(name="back", size=17, color=(canGoBack ? "color.text" : "color.text-disabled"), weight=600)
+        button press=goForward disabled=(not canGoForward) class=Bare width=40 height=40 display="flex" align-items="center" justify-content="center" aria-label="Forward" testId="menu-forward"
+          Icon(name="forward", size=17, color=(canGoForward ? "color.text" : "color.text-disabled"), weight=600)
+      if editing
+        row class=FieldText position="absolute" left=18 right=50 top=0 height=52 align-items="center"
+          input id="address" value=draft input=edit submit=submit
+            placeholder="Search or enter address" aria-label="Search or enter address" testId="address"
+            flex=1 min-width=0 height=52 border="none" background-color="transparent" color="color.text" caret-color="color.accent"
+            font-size=17 font-weight=500 letter-spacing="-0.01em"
+            inputmode="search" enterkeyhint="go" autocapitalize="none" autocorrect="off" spellcheck=false
+      else
+        // The address is the bar's own text, flown here (app.contract). A press on it edits it.
+        button press=editAddress class=Bare position="absolute" left=88 right=88 top=0 height=52 aria-label="Edit Address" testId="menu-address"
+      row class=(editing ? TrailingOut : TrailingIn) position="absolute" right=8 top=6 inert=editing
+        button press=copyLink class=Bare width=40 height=40 display="flex" align-items="center" justify-content="center" aria-label="Copy Link" testId="menu-copy"
+          Icon(name="link", size=17, color="color.text", weight=500)
+        button press=reloadPage class=Bare width=40 height=40 display="flex" align-items="center" justify-content="center" aria-label="Reload" testId="menu-reload"
+          Icon(name="reload", size=17, color="color.text", weight=500)
+      // The microphone while the field is empty, the clear button while it holds text. Both stay
+      // mounted and trade places; only the one that shows takes a press. @ref LLP 0001#sheets
+      box class=(editing ? TrailingIn : TrailingOut) position="absolute" right=6 top=4 width=44 height=44 inert=(not editing)
+        // TODO(TODO.md#voice-search): start dictation.
+        button class=Bare position="absolute" left=0 top=0 width=44 height=44 pointer-events=(draft == "" ? "auto" : "none") aria-hidden=(draft != "") aria-label="Voice Search" testId="voice"
+          box class=(draft == "" ? PictureIn : PictureOut)
+            Icon(name="microphone", size=18, color="color.text-secondary", weight=500)
+        button press=fill("") class=Bare position="absolute" left=0 top=0 width=44 height=44 pointer-events=(draft == "" ? "none" : "auto") aria-hidden=(draft == "") aria-label="Clear" testId="clear"
+          box class=(draft == "" ? PictureOut : PictureIn)
+            Icon(name="clear", size=18, color="color.text-secondary", weight=500)
+
+// The search sheet below its field: what the person entered before.
+component SearchSheet
+  props
+    // The newest first: an address or the words of a search.
+    recents: string[]
+    icons: string[]
     pick: action
     fill: action
   view
-    column padding-top="space-4" padding-left="space-4" padding-right="space-4" gap=14 testId="search-sheet"
-      row height=52 flex-shrink=0 align-items="center" gap="space-1" padding-left=18 padding-right="space-2" border-radius="radius.full" background-color="color.surface-raised" box-shadow="inset 0 0 0 1.5px #a3a3a3"
-        input id="address" value=draft input=edit submit=submit
-          placeholder="Search or enter address" aria-label="Search or enter address" testId="address"
-          flex=1 min-width=0 border="none" background-color="transparent" color="color.text" caret-color="color.accent"
-          font-size=17 font-weight=500 letter-spacing="-0.01em"
-          inputmode="url" enterkeyhint="go" autocapitalize="none" autocorrect="off" spellcheck=false autofocus=true
-        // TODO(TODO.md#voice-search): start dictation.
-        button class=Bare width=40 height=40 display="flex" align-items="center" justify-content="center" aria-label="Voice Search" testId="voice"
-          Icon(name="microphone", size=18, color="color.text-secondary", weight=500)
+    column testId="search-sheet"
       if recents.length > 0
         column flex-shrink=0 padding-left=6 padding-right=6
           for r in recents.slice(0, 4) key=r
@@ -69,27 +112,10 @@ component MenuTile
 
 component MenuSheet
   props
-    canGoBack: bool
-    canGoForward: bool
-    goBack: action
-    goForward: action
-    copyLink: action
-    reloadPage: action
     closeTab: action
     later: action
   view
-    column padding-top="space-4" padding-left="space-4" padding-right="space-4" gap=18 testId="menu-sheet"
-      row height=52 flex-shrink=0 align-items="center" padding-left="space-2" padding-right="space-2" border-radius="radius.full" background-color="color.surface-raised"
-        button press=goBack disabled=(not canGoBack) class=Bare width=40 height=40 display="flex" align-items="center" justify-content="center" aria-label="Back" testId="menu-back"
-          Icon(name="back", size=17, color=(canGoBack ? "color.text" : "color.text-disabled"), weight=600)
-        button press=goForward disabled=(not canGoForward) class=Bare width=40 height=40 display="flex" align-items="center" justify-content="center" aria-label="Forward" testId="menu-forward"
-          Icon(name="forward", size=17, color=(canGoForward ? "color.text" : "color.text-disabled"), weight=600)
-        // The address is the bar's own text, flown here (app.contract).
-        box flex=1 min-width=0
-        button press=copyLink class=Bare width=40 height=40 display="flex" align-items="center" justify-content="center" aria-label="Copy Link" testId="menu-copy"
-          Icon(name="link", size=17, color="color.text", weight=500)
-        button press=reloadPage class=Bare width=40 height=40 display="flex" align-items="center" justify-content="center" aria-label="Reload" testId="menu-reload"
-          Icon(name="reload", size=17, color="color.text", weight=500)
+    column gap=18 testId="menu-sheet"
       // TODO(TODO.md#page-menu): these four do nothing yet.
       row flex-shrink=0 gap="space-3"
         MenuTile(icon="find", label="Find on Page", press=later, id="menu-find")

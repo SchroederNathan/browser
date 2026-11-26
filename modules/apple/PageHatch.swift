@@ -38,10 +38,37 @@ func pageHatch(_ element: ExactElement) {
         // sticky content inside it, and the page still scrolls under both.
         web.obscuredContentInsets = UIEdgeInsets(top: top, left: 0, bottom: bar, right: 0)
     }
+    keepPageUnderBar(web)
     if element.isNew { element.diagnostics.log("page insets follow the safe area and the bar") }
     #endif
 }
 
-/// The node is leaving, its view still there: nothing was added to take back.
+/// The node is leaving, its view still there: the watch on its scroll view ends.
 func pageHatchEnded(_ element: ExactElement) {
+    #if os(iOS)
+    guard let web = element.platform as? WKWebView else { return }
+    objc_setAssociatedObject(web, &stripWatchKey, nil, .OBJC_ASSOCIATION_RETAIN_NONATOMIC)
+    #endif
 }
+
+#if os(iOS)
+private var stripWatchKey: UInt8 = 0
+
+/// When a page has a fixed bar along its bottom edge, WebKit paints that bar's colour over the
+/// whole covered strip below it (a `WKColorExtensionView` in the scroll view), so the page does
+/// not show under the browser's bar. WebKit has no public switch for it. The strip's view gets an
+/// empty mask when WebKit adds it. The one at the top edge, under the status bar, is left.
+private func keepPageUnderBar(_ web: WKWebView) {
+    let clear = { [weak web] in
+        guard let web else { return }
+        for view in web.scrollView.subviews where String(describing: type(of: view)) == "WKColorExtensionView" {
+            let shown = view.convert(view.bounds, to: web)
+            if shown.midY > web.bounds.midY, view.layer.mask == nil { view.layer.mask = CALayer() }
+        }
+    }
+    clear()
+    guard objc_getAssociatedObject(web, &stripWatchKey) == nil else { return }
+    let watch = web.scrollView.layer.observe(\.sublayers) { _, _ in DispatchQueue.main.async(execute: clear) }
+    objc_setAssociatedObject(web, &stripWatchKey, watch, .OBJC_ASSOCIATION_RETAIN_NONATOMIC)
+}
+#endif

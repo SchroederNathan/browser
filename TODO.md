@@ -13,7 +13,8 @@ When you add a control that does nothing yet, add it here in the same form.
 
 ## Voice search
 
-Design: Paper "02 Search", the microphone in the search field.
+Design: Paper "02 Search", the microphone in the search field. It shows while the field is empty.
+While the field holds text, the clear button (`clear`) is in its place.
 
 - [ ] `voice` (`sheets.contract`, `SearchSheet`): start dictation and write the result to the field.
   Exact has `@exact/speech-recognition`. The app must ask for the microphone and speech permissions.
@@ -50,6 +51,8 @@ Private tabs work: the left page of the pager above the tab grid (`app.contract`
 - [ ] Delete a tab's snapshots from `app:/cache` when the tab closes. Each tab has at most two files,
   `tab-<id>-0.png` and `tab-<id>-1.png`.
 - [ ] Reorder tabs by drag in the grid.
+- [ ] When the Duo unfolds while the grid shows, the pager lands on the private page: `pagerStart`
+  holds the old screen's width.
 
 ## Search sheet
 
@@ -57,6 +60,8 @@ Private tabs work: the left page of the pager above the tab grid (`app.contract`
 - [ ] Favorites. The second design pass removed the site tiles from the sheet.
 - [ ] Let the person clear the recent entries.
 - [ ] Let the person choose the search engine. `addressOf` in `address.contract` uses Google.
+- [ ] A pull on the search field does not move the sheet: the field keeps its own drags. A pull
+  anywhere else on the sheet moves it.
 
 ## Pages
 

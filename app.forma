@@ -55,6 +55,12 @@ theme
   glass.accent = rgb(23 23 23 / 0.88)  scheme=fixed
   // The tab behind the front one in the tabs button.
   thumbnail.behind = rgb(255 255 255 / 0.55)  scheme=fixed
+  // A card's drop shadow and hairline ring in the tabs button.
+  thumbnail.shadow = rgb(0 0 0 / 0.32)  scheme=fixed
+  thumbnail.ring = rgb(0 0 0 / 0.22)  scheme=fixed
+  // The ring of the search field, and the same ring clear, so it can fade.
+  field.ring = rgb(163 163 163)  scheme=fixed
+  field.ring-clear = rgb(163 163 163 / 0)  scheme=fixed
   // The dark wash over the page behind an open sheet.
   scrim.tint = rgb(0 0 0 / 0.32)  scheme=fixed
 
@@ -64,6 +70,7 @@ icons
   icon.unlock = icon(sf "lock.open.fill", svg "icons/unlock.svg")
   icon.chevron-up = icon(sf "chevron.up", svg "icons/chevron-up.svg")
   icon.microphone = icon(sf "mic", svg "icons/microphone.svg")
+  icon.clear = icon(sf "xmark.circle.fill", svg "icons/clear.svg")
   icon.search = icon(sf "magnifyingglass", svg "icons/search.svg")
   icon.arrow-up-right = icon(sf "arrow.up.right", svg "icons/arrow-up-right.svg")
   icon.back = icon(sf "chevron.left", svg "icons/back.svg")

@@ -5,9 +5,19 @@ test "the address pill opens the search sheet on the page's address"
   expect state sheet == "search"
   expect state composing == false
   expect state draft == "https://expo.dev/"
+  clock +300
   expect focused "address"
   tap "scrim"
   expect state sheet == "none"
+
+test "the clear button empties the field and keeps it focused"
+  tap "bar-middle"
+  clock settle
+  expect state draft == "https://expo.dev/"
+  tap "clear"
+  expect state draft == ""
+  expect text "address" == ""
+  expect focused "address"
 
 test "the chevron opens the page menu, and a press beside it closes it"
   tap "bar-right"
@@ -16,6 +26,39 @@ test "the chevron opens the page menu, and a press beside it closes it"
   tap "scrim"
   expect state sheet == "none"
   expect tree missing "menu-summarize"
+
+test "the address in the page menu turns the menu into the search sheet"
+  tap "bar-right"
+  clock settle
+  tap "menu-address"
+  expect state sheet == "search"
+  expect state draft == "https://expo.dev/"
+  expect tree missing "menu-summarize"
+  clock +300
+  expect focused "address"
+
+test "a pull down closes a sheet, and a short pull does not"
+  tap "bar-right"
+  clock settle
+  tap "menu-sheet" drag 0 40
+  clock settle
+  expect state sheet == "menu"
+  tap "menu-sheet" drag 0 220
+  clock settle
+  expect state sheet == "none"
+  expect state pull == 0
+
+test "a pull up makes a sheet as tall as the screen allows, and a pull down returns it"
+  tap "bar-middle"
+  clock +300
+  expect state sheetTall == false
+  tap "sheet-scroll" drag 0 -120
+  clock settle
+  expect state sheetTall == true
+  tap "sheet-field" drag 0 160 from 6 26
+  clock settle
+  expect state sheetTall == false
+  expect state sheet == "search"
 
 test "a control that is not built yet changes nothing"
   tap "bar-right"
@@ -32,10 +75,21 @@ test "the tabs button shows the grid, and Done returns to the page"
   expect text "count" == "1"
   expect tree has "tab-1"
   tap "bar-right"
+  clock +100
   expect state screen == "browse"
-  expect state landing == "1"
+  expect tree has "page-cover"
   clock +800
-  expect state landing == ""
+  expect tree missing "page-cover"
+
+test "a press on the bar while the grid is about to show opens no sheet"
+  tap "bar-left"
+  tap "bar-middle"
+  tap "bar-right"
+  clock +400
+  clock settle
+  expect state sheet == "none"
+  expect state screen == "tabs"
+  expect tree has "tab-1"
 
 test "the plus button opens the search sheet for a new tab"
   tap "bar-left"
@@ -52,6 +106,8 @@ test "the plus button opens the search sheet for a new tab"
   expect state tabs.length == 2
   expect state tabs.1.url == "https://example.com"
   expect state current == "2"
+  clock +800
+  expect state flyScale == 1
 
 test "words in the field search, and are kept as a recent search"
   tap "bar-middle"
