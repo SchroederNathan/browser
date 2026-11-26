@@ -55,6 +55,7 @@ These come from the request of 2026-11-26. `[confirmed]` Nathan Schroeder, 2026-
 
 17. Words typed in the field, with spaces, open a Google search. The field is not for an address
     only.
+18. While the field holds text, its trailing control is a clear button in place of the microphone.
 
 ## Design system
 
@@ -162,6 +163,12 @@ entered: an address, or the words of a search. `icons` keeps each site's icon ad
 The field's keyboard is the web search keyboard (`inputmode="search"`), which has a space key and a
 period key (requirement 17). `[observed]` On the simulator the URL keyboard (`inputmode="url"`) has
 no space key, so a person could not type the words of a search.
+
+The field's trailing control is the microphone while the field is empty and a clear button while it
+holds text (requirement 18). The two pictures trade places as the bar's pictures do (`PictureIn`,
+`PictureOut`), and only the one that shows takes a press. A press on the clear button empties the
+field and keeps the keyboard up. A sheet for the current page opens with the page's address in the
+field, so it opens with the clear button.
 
 ### Scrim
 

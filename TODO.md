@@ -13,7 +13,8 @@ When you add a control that does nothing yet, add it here in the same form.
 
 ## Voice search
 
-Design: Paper "02 Search", the microphone in the search field.
+Design: Paper "02 Search", the microphone in the search field. It shows while the field is empty.
+While the field holds text, the clear button (`clear`) is in its place.
 
 - [ ] `voice` (`sheets.contract`, `SearchSheet`): start dictation and write the result to the field.
   Exact has `@exact/speech-recognition`. The app must ask for the microphone and speech permissions.

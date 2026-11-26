@@ -14,6 +14,7 @@ ICONS = {
     "unlock": ("lock.open.fill", 2.4, '<rect x="5" y="11" width="14" height="10" rx="2.5"/><path d="M8 11V8a4 4 0 0 1 7.5-1.9"/>'),
     "chevron-up": ("chevron.up", 2.2, '<path d="M5 15l7-7 7 7"/>'),
     "microphone": ("mic", 1.9, '<rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/>'),
+    "clear": ("xmark.circle.fill", 0, '<path fill="#000" fill-rule="evenodd" stroke="none" d="M12 2a10 10 0 1 0 0 20a10 10 0 1 0 0-20zM12 13.41L14.76 16.17L16.17 14.76L13.41 12L16.17 9.24L14.76 7.83L12 10.59L9.24 7.83L7.83 9.24L10.59 12L7.83 14.76L9.24 16.17z"/>'),
     "search": ("magnifyingglass", 2, '<circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/>'),
     "arrow-up-right": ("arrow.up.right", 2, '<path d="M7 17L17 7M9 7h8v8"/>'),
     "back": ("chevron.left", 2.2, '<path d="M15 5l-7 7 7 7"/>'),

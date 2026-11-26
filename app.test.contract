@@ -9,6 +9,15 @@ test "the address pill opens the search sheet on the page's address"
   tap "scrim"
   expect state sheet == "none"
 
+test "the clear button empties the field and keeps it focused"
+  tap "bar-middle"
+  clock settle
+  expect state draft == "https://expo.dev/"
+  tap "clear"
+  expect state draft == ""
+  expect text "address" == ""
+  expect focused "address"
+
 test "the chevron opens the page menu, and a press beside it closes it"
   tap "bar-right"
   expect state sheet == "menu"

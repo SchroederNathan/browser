@@ -64,6 +64,7 @@ icons
   icon.unlock = icon(sf "lock.open.fill", svg "icons/unlock.svg")
   icon.chevron-up = icon(sf "chevron.up", svg "icons/chevron-up.svg")
   icon.microphone = icon(sf "mic", svg "icons/microphone.svg")
+  icon.clear = icon(sf "xmark.circle.fill", svg "icons/clear.svg")
   icon.search = icon(sf "magnifyingglass", svg "icons/search.svg")
   icon.arrow-up-right = icon(sf "arrow.up.right", svg "icons/arrow-up-right.svg")
   icon.back = icon(sf "chevron.left", svg "icons/back.svg")

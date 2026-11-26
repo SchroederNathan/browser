@@ -2,7 +2,7 @@
 // @ref LLP 0001#sheets
 use Icon from "./icons.contract"
 use Favicon, hostOf, initial, isAddress, shortAddress, faviconOf from "./address.contract"
-use TypeBase, TypeXs, Group, Bare from "./design.contract"
+use TypeBase, TypeXs, Group, Bare, PictureIn, PictureOut from "./design.contract"
 
 component SearchSheet
   props
@@ -22,9 +22,16 @@ component SearchSheet
           flex=1 min-width=0 border="none" background-color="transparent" color="color.text" caret-color="color.accent"
           font-size=17 font-weight=500 letter-spacing="-0.01em"
           inputmode="search" enterkeyhint="go" autocapitalize="none" autocorrect="off" spellcheck=false autofocus=true
-        // TODO(TODO.md#voice-search): start dictation.
-        button class=Bare width=40 height=40 display="flex" align-items="center" justify-content="center" aria-label="Voice Search" testId="voice"
-          Icon(name="microphone", size=18, color="color.text-secondary", weight=500)
+        // The microphone while the field is empty, the clear button while it holds text. Both stay
+        // mounted and trade places; only the one that shows takes a press. @ref LLP 0001#sheets
+        box position="relative" width=40 height=40 flex-shrink=0
+          // TODO(TODO.md#voice-search): start dictation.
+          button class=Bare position="absolute" left=0 top=0 width=40 height=40 pointer-events=(draft == "" ? "auto" : "none") aria-hidden=(draft != "") aria-label="Voice Search" testId="voice"
+            box class=(draft == "" ? PictureIn : PictureOut)
+              Icon(name="microphone", size=18, color="color.text-secondary", weight=500)
+          button press=fill("") class=Bare position="absolute" left=0 top=0 width=40 height=40 pointer-events=(draft == "" ? "none" : "auto") aria-hidden=(draft == "") aria-label="Clear" testId="clear"
+            box class=(draft == "" ? PictureOut : PictureIn)
+              Icon(name="clear", size=18, color="color.text-secondary", weight=500)
       if recents.length > 0
         column flex-shrink=0 padding-left=6 padding-right=6
           for r in recents.slice(0, 4) key=r
