@@ -3,7 +3,7 @@
 // leaves; on Cancel they fly back to their places in the grid. @ref LLP 0001#close-all
 use Icon from "./icons.contract"
 use Tab, TabFace from "./tabs.contract"
-use Bare, TypeLg, WashIn, WashOut, ScaleIn, ScaleOut, FadeIn, FadeOut, BinIn, BinOut, ArcRise, ArcSink, CardIn, CardBack, CardHold, CardFall, FrostIn, FrostOut from "./design.contract"
+use Bare, TypeLg, WashIn, WashOut, ScaleIn, ScaleOut, FadeIn, FadeOut, BinIn, BinOut, ArcRise, ArcSink, CardIn, CardBack, CardHold, CardFall from "./design.contract"
 
 // A card in the stack, and where it was in the grid when the alert opened.
 shape BinCard
@@ -43,9 +43,9 @@ component CloseAllAlert
   // The bin's size follows the screen's height; the cards take the scale that fits them in it.
   // The bin is a cup seen from a little above: `binW` across its rim, narrower by `taper` on each
   // side at its bottom. Its opening is an ellipse 28 points high, and its bottom curves the same way.
-  derive binW = 200
   derive taper = 22
-  derive binH = max(120, min(232, height - safeTop - safeBottom - 480))
+  derive binH = max(100, min(232, min((height - safeTop - safeBottom) * 0.33, height - safeTop - safeBottom - 274)))
+  derive binW = binH
   // How much of the front card shows above the bin's rim.
   derive peek = 72
   // How far a card rises over the bin on its way in. A card is tall, so it rises far enough that
@@ -53,9 +53,9 @@ component CloseAllAlert
   derive lift = 120
   // From the icon's top to Cancel's bottom: the icon, the title and the message, the stack above
   // the rim, the bin, the button and Cancel.
-  derive blockH = 350 + binH
+  derive blockH = 320 + binH
   derive top = max(safeTop + 16, (height - blockH) / 2 - 12)
-  derive rim = top + 214
+  derive rim = top + min(192, max(132, height - safeTop - safeBottom - binH - 158))
   derive binBottom = rim + binH
   derive cardH = 44 + previewHeight
   // A card fits in the bin with 16 points to spare at the bottom, and is at most 0.64 of its width.
@@ -79,22 +79,6 @@ component CloseAllAlert
   derive buttonTop = binBottom + 32
   derive binL = centerX - binW / 2
   derive binR = centerX + binW / 2
-  // The body's outline, from the box's top-left corner: the front of the rim, a side, the curved
-  // bottom, the other side. The rim's front is the opening's outer edge, so the two meet exactly.
-  derive bodyPath = `path('M 0 0 A ${binW / 2} 14 0 0 0 ${binW} 0 L ${binW - taper} ${binH - 12} A ${binW / 2 - taper} 12 0 0 1 ${taper} ${binH - 12} Z')`
-  // The lip along the front of the rim: 4 points deep at the front and none at the ends, as a round
-  // rim seen from above is. Under it, a band of shade 12 points deep.
-  derive lipPath = `path('M 0 0 A ${binW / 2} 14 0 0 0 ${binW} 0 A ${binW / 2} 18 0 0 1 0 0 Z')`
-  derive shadePath = `path('M 0 0 A ${binW / 2} 18 0 0 0 ${binW} 0 A ${binW / 2} 30 0 0 1 0 0 Z')`
-  // The floor shadows, cut away where the bin's base covers them, so none shows through the base as
-  // the bin fades. Each outline runs round its box and in along the base: up the walls, and along
-  // the base's curved bottom a point inside it, so no gap shows at the base's edge.
-  derive base = binW - 2 * taper
-  derive contactCut = `path('M 0 0 L ${6 - taper * 16 / (binH - 12)} 0 L 7 16 A ${base / 2 - 1} 11 0 0 0 ${5 + base} 16 L ${6 + base + taper * 16 / (binH - 12)} 0 L ${base + 20} 0 L ${base + 20} 38 L 0 38 Z')`
-  derive ambientCut = `path('M 0 0 L ${122 - base / 2 - taper * 24 / (binH - 12)} 0 L ${123 - base / 2} 24 A ${base / 2 - 1} 11 0 0 0 ${121 + base / 2} 24 L ${122 + base / 2 + taper * 24 / (binH - 12)} 0 L 260 0 L 260 60 L 0 60 Z')`
-  // The cards blur through the bin's body while they rest in it and fall through it. On iOS a blur
-  // is not drawn while its box fades, so it does not fade with the bin: it shows at once under a
-  // thick frost, and the frost then fades to let it through (`FrostIn`, `FrostOut`).
   derive blurred = phase == "ready" or phase == "drop" or phase == "hold"
   // Under the cut, a card shows above the rim and inside the bin's walls, and not below its bottom.
   derive cardCut = `polygon(0px 0px, ${width}px 0px, ${width}px ${rim}px, ${binR}px ${rim}px, ${binR - taper}px ${binBottom - 12}px, ${binL + taper}px ${binBottom - 12}px, ${binL}px ${rim}px, 0px ${rim}px)`
@@ -102,7 +86,7 @@ component CloseAllAlert
     // The app draws this alert, as the cards fly into it: a native alert has no room for them. The
     // grid and the bar under it are inert while it shows (app.contract).
     // exact-accept lower-dialog-role
-    box position="absolute" left=0 top=0 width=width height=height role="alertdialog" aria-modal=true aria-label=title testId="close-all"
+    box position="absolute" left=0 top=0 width=width height=height z-index=(phase == "back" ? 0 : 2) role="alertdialog" aria-modal=true aria-label=title testId="close-all"
       // The grid behind washes out to white. It does not blur: on iOS a filter is drawn as a picture
       // of its box, and a picture of the grid stopped the frames for about 100 ms.
       box class=(shown ? WashIn : WashOut) background-color="veil.wash" aria-hidden=true testId="close-all-veil"
@@ -129,14 +113,6 @@ component CloseAllAlert
         text label font-family="system-ui" font-size=17 font-weight=400 color="color.on-accent"
       button appearance="auto" buttonStyle="prominent-glass" accent-color="color.danger" press=confirm visibility=(blurred ? "visible" : "hidden") position="absolute" left=(centerX - buttonW / 2) top=buttonTop width=buttonW height=52 testId="close-all-confirm"
         text label testId="close-all-label"
-      // The shadow on the floor, two ellipses on the floor's plane around the bin's base. The base
-      // hides their middles, so each is dark out to near the base's edge: a dark contact shadow
-      // that ends a few points past the base, and a wide soft one. The light is from the front
-      // left, so both lie a little to the right and behind.
-      box class=(shown ? BinIn : BinOut) left=(centerX + 8 - 130) top=(binBottom - 36) width=260 height=60 clip-path=ambientCut background-image="radial-gradient(closest-side, bin.shadow-ambient 0%, bin.shadow-ambient 40%, bin.shadow-soft 70%, bin.shadow-clear 100%)" pointer-events="none" aria-hidden=true
-      box class=(shown ? BinIn : BinOut) left=(centerX + 4 - base / 2 - 10) top=(binBottom - 28) width=(base + 20) height=38 clip-path=contactCut background-image="radial-gradient(closest-side, bin.shadow-core 0%, bin.shadow-core 70%, bin.shadow-mid 84%, bin.shadow-clear 100%)" pointer-events="none" aria-hidden=true
-      // The bin's opening, behind the cards: the inside of the back wall, in shade, and its white edge.
-      box class=(shown ? BinIn : BinOut) left=binL top=(rim - 14) width=binW height=28 border-radius="50%" border-width=2 border-style="solid" border-color="bin.lip" background-image="linear-gradient(180deg, bin.rim-deep 0%, bin.rim 100%)" pointer-events="none" aria-hidden=true
       // The cards. A card is taller than the bin is deep, so what is outside the bin below its rim
       // is cut off (`cut`), and a card falls through the bin's bottom out of sight.
       box position="absolute" left=0 top=0 width=width height=height clip-path=(cut ? cardCut : "none") pointer-events="none" aria-hidden=true
@@ -148,14 +124,4 @@ component CloseAllAlert
                 scale=(home ? 1 : stackScale)
                 rotate=(home ? "0deg" : `${fanTurn(i, n)}deg`)
                 TabFace(tab=c.tab, selected=(c.tab.id == current), width=cardWidth, previewHeight=previewHeight)
-      // The blur of the cards behind the body, in the body's outline.
-      box position="absolute" left=binL top=rim width=binW height=binH clip-path=bodyPath backdrop-filter="blur(12px)" visibility=(blurred ? "visible" : "hidden") pointer-events="none" aria-hidden=true
-      // The bin's body: frosted white over the lower part of the cards, so they show dimly through
-      // it. It is shaded as a round thing lit from the front left is: darker at its right side and at
-      // its bottom, with a soft light down its left. It is a fill and not glass, so it can fade. Over
-      // the blur its frost is thin, so the blurred cards show through it as in the recording.
-      box class=(shown ? BinIn : BinOut) left=binL top=rim width=binW height=binH pointer-events="none" aria-hidden=true testId="close-all-bin"
-        box class=(blurred ? FrostOut : FrostIn) clip-path=bodyPath width=binW height=binH background-image="linear-gradient(180deg, bin.frost-top 0%, bin.frost 45%, bin.frost-bottom 100%)"
-        box position="absolute" left=0 top=0 width=binW height=binH clip-path=bodyPath background-image="linear-gradient(90deg, bin.glint-clear 14%, bin.glint 27%, bin.glint-clear 40%), linear-gradient(90deg, bin.side 0%, bin.side-clear 16%, bin.side-clear 52%, bin.side-deep 100%), linear-gradient(180deg, bin.frost-thin-top 0%, bin.frost-thin 45%, bin.frost-thin-bottom 100%)"
-      box class=(shown ? BinIn : BinOut) left=binL top=rim width=binW height=30 clip-path=shadePath background-image="linear-gradient(180deg, bin.lip-shade 0%, bin.lip-shade 60%, bin.lip-shade-clear 100%)" pointer-events="none" aria-hidden=true
-      box class=(shown ? BinIn : BinOut) left=binL top=rim width=binW height=18 clip-path=lipPath background-color="bin.lip" pointer-events="none" aria-hidden=true
+      image "assets/wastebasket.png" class=(shown ? BinIn : BinOut) left=binL top=rim width=binW height=binH object-fit="contain" alt="" pointer-events="none" testId="close-all-bin"
