@@ -120,6 +120,21 @@ test "the plus button opens the search sheet for a new tab"
   clock +800
   expect state flyScale == 1
 
+test "sharing from a second tab closes the page menu and keeps that tab open"
+  tap "bar-left"
+  clock +400
+  clock settle
+  tap "bar-middle"
+  type "address" "example.com/article?story=2"
+  type "address" key "Enter"
+  clock settle
+  tap "bar-right"
+  clock settle
+  tap "menu-share"
+  expect state sheet == "none"
+  expect state current == "2"
+  expect state tabs.1.url == "https://example.com/article?story=2"
+
 test "words in the field search, and are kept as a recent search"
   tap "bar-middle"
   type "address" "expo router native tabs"

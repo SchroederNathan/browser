@@ -113,15 +113,16 @@ component MenuTile
 component MenuSheet
   props
     closeTab: action
+    sharePage: action
     later: action
   view
     column gap=18 testId="menu-sheet"
-      // TODO(TODO.md#page-menu): these four do nothing yet.
+      // TODO(TODO.md#page-menu): Find on Page, Summarize and Pin Tab do nothing yet.
       row flex-shrink=0 gap="space-3"
         MenuTile(icon="find", label="Find on Page", press=later, id="menu-find")
         MenuTile(icon="sparkles", label="Summarize", press=later, id="menu-summarize")
         MenuTile(icon="pin", label="Pin Tab", press=later, id="menu-pin")
-        MenuTile(icon="share", label="Share", press=later, id="menu-share")
+        MenuTile(icon="share", label="Share", press=sharePage, id="menu-share")
       // TODO(TODO.md#page-menu): Reader Mode, Translate, Page Zoom and Request Desktop Site do nothing yet.
       column flex-shrink=0 class=Group
         MenuRow(icon="reader", label="Reader Mode", last=false, danger=false, press=later, id="menu-reader")
