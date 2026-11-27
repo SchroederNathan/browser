@@ -487,7 +487,20 @@ starts over its page. A press on the pill or the chevron does nothing while the 
 for the snapshot: `[observed]` on the web host that press opened a sheet over the grid that was
 about to show, and an address entered there left the grid over the page.
 
-- To the grid: the tabs button asks for a snapshot of the page (`captureScreenshot`). The snapshot
+- On iOS, pinching inward at minimum zoom lifts a picture of the page over the actual grid.
+  Its scale, position and rotation follow the two fingers; spreading them again reverses the
+  pinch without committing. Only the final scale counts: at 75% or smaller it settles upright
+  into the top-left preview. From the first visible frame of the pinch, that slot is empty:
+  only the moving card represents the active tab. Its page fills the screen at rest, with
+  the title strip above the screen and the selection ring outside its edges. Pinching reveals
+  them by moving the whole card, not by adding chrome at release. Reversing the gesture
+  carries them back out. A non-bouncing spring brings the card upright into the slot.
+  The other cards already occupy their
+  eventual slots. Releasing above that threshold or interrupting the pinch returns to the page without
+  changing the grid order. With Reduce Motion, the snapshot fades and the cards do not slide.
+- To the grid: the tabs button asks for a snapshot of the page (`captureScreenshot`). A pinch
+  that starts on an enlarged page zooms it out instead. On the web, the tabs button remains the
+  way to open the grid; the browser shell cannot observe touches inside a cross-origin page. The snapshot
   is placed over its page ("cover") and the grid shows when its picture is drawn, or after 300 ms
   ("drop"). One frame later the card's place is read with `frame()`, and the snapshot flies to it
   ("down").
@@ -636,6 +649,12 @@ with the screen's ratio a card on the iPhone frame is 472 points high.
 
 The grid has 2 columns in a compact layout, 3 in regular portrait and 4 in regular landscape.
 `[observed]` Paper screens. Across a book fold the grid is two columns on each side of the hinge.
+
+Regular and private tabs each have their own most-recent-first order. The active tab takes the
+first slot when the overview opens. If it already occupies that slot, no other card moves.
+Closing one tab moves the surviving cards into the gap together on the same non-bouncing
+layout spring, including across row boundaries. There is no stagger. With Reduce Motion
+they take their new places immediately, and the pinched page cross-fades over the real grid.
 
 The control above the grid is 4 points below the top inset, and the grid starts 28 points below the
 control. The top inset is the top safe area, and at least 16 points (requirement 20).

@@ -1,0 +1,61 @@
+test "a small pinch stays on the page; a deliberate inward pinch opens its tab card" on ios
+  tap "frame-1" pinch 0.85
+  clock +800
+  expect state screen == "browse"
+  expect state pinching == false
+  expect tree missing "grid"
+  tap "frame-1" pinch 0.5
+  clock +400
+  clock settle
+  expect state screen == "tabs"
+  expect tree has "tab-1"
+  expect tree has "tab-open-1"
+  expect tree has "tab-close-1"
+  expect tree missing "pinch-landing-slot"
+  expect tree missing "tab-flight"
+  tap "bar-right"
+  clock +800
+  expect state screen == "browse"
+
+test "an older tab lands first and closing it moves its neighbors into the gap" on ios
+  size 390x844
+  tap "bar-left"
+  clock +800
+  clock settle
+  tap "bar-middle"
+  type "address" "example.com"
+  type "address" key "Enter"
+  clock settle
+  tap "bar-left"
+  clock +800
+  clock settle
+  tap "bar-middle"
+  type "address" "example.org"
+  type "address" key "Enter"
+  clock settle
+  tap "bar-left"
+  clock +800
+  clock settle
+  expect layout "tab-3" right <= layout "tab-2" left
+  expect layout "tab-3" bottom <= layout "tab-1" top
+  tap "tab-open-1"
+  clock +800
+  clock settle
+  tap "frame-1" pinch 0.85
+  clock +800
+  expect state screen == "browse"
+  expect tree missing "grid"
+  tap "frame-1" pinch 0.5
+  clock +800
+  clock settle
+  expect state screen == "tabs"
+  expect layout "tab-1" top == layout "tab-3" top within 1
+  expect layout "tab-1" right <= layout "tab-3" left
+  expect layout "tab-1" left == layout "tab-2" left within 1
+  expect layout "tab-1" bottom <= layout "tab-2" top
+  tap "tab-close-1"
+  clock +400
+  clock settle
+  expect tree missing "tab-1"
+  expect layout "tab-3" top == layout "tab-2" top within 1
+  expect layout "tab-3" right <= layout "tab-2" left

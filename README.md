@@ -20,6 +20,7 @@ Set `EXACT` to an Exact checkout at the commit in `eas.json` (`EXACT_REF`), then
 bun exact.mjs web          # web dev loop
 bun exact.mjs ios --run    # iOS Simulator
 bun exact.mjs test ios     # iOS tests
+bun exact.mjs test ios tests/pinch.test.contract --touch platform  # two-finger page gesture
 bun exact.mjs test web     # web tests
 bun tests/desktop-site.mjs --sim <udid>  # check the user agent received by a local site
 ```
