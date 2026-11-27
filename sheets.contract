@@ -115,32 +115,43 @@ component MenuSheet
     closeTab: action
     sharePage: action
     later: action
+    percent: number
+    site: string
+    setZoom: action
+  state settings = false
+  action toggleSettings
+    settings = not settings
   view
-    column gap=18 testId="menu-sheet"
-      // TODO(TODO.md#page-menu): Find on Page, Summarize and Pin Tab do nothing yet.
-      row flex-shrink=0 gap="space-3"
-        MenuTile(icon="find", label="Find on Page", press=later, id="menu-find")
-        MenuTile(icon="sparkles", label="Summarize", press=later, id="menu-summarize")
-        MenuTile(icon="pin", label="Pin Tab", press=later, id="menu-pin")
-        MenuTile(icon="share", label="Share", press=sharePage, id="menu-share")
-      // TODO(TODO.md#page-menu): Reader Mode, Translate, Page Zoom and Request Desktop Site do nothing yet.
-      column flex-shrink=0 class=Group
-        MenuRow(icon="reader", label="Reader Mode", last=false, danger=false, press=later, id="menu-reader")
-        MenuRow(icon="globe", label="Translate", last=false, danger=false, press=later, id="menu-translate")
-        row height=54 align-items="center" gap=14 padding-left=18 padding-right=10 border-bottom-width=1 border-bottom-style="solid" border-bottom-color="color.border"
-          row width=24 justify-content="center" flex-shrink=0
-            Icon(name="text-size", size=17, color="color.text", weight=500)
-          text "Page Zoom" class=TypeBase color="color.text" flex=1
-          row height=36 align-items="center" border-radius="radius.md" background-color="neutral-50"
-            text "100%" width=56 text-align="center" font-size=15 font-weight=500 color="color.text-secondary" testId="menu-zoom"
-            box width=1 height=18 background-color="color.border"
-            button press=later class=Bare width=40 height=36 display="flex" align-items="center" justify-content="center" aria-label="Zoom Out" testId="menu-zoom-out"
-              Icon(name="minus", size=14, color="color.text", weight=600)
-            box width=1 height=18 background-color="color.border"
-            button press=later class=Bare width=40 height=36 display="flex" align-items="center" justify-content="center" aria-label="Zoom In" testId="menu-zoom-in"
-              Icon(name="plus", size=14, color="color.text", weight=600)
-        MenuRow(icon="desktop", label="Request Desktop Site", last=true, danger=false, press=later, id="menu-desktop")
-      column flex-shrink=0 class=Group
-        // TODO(TODO.md#page-menu): Site Settings does nothing yet.
-        MenuRow(icon="sliders", label="Site Settings", last=false, danger=false, press=later, id="menu-settings")
-        MenuRow(icon="close-circle", label="Close Tab", last=true, danger=true, press=closeTab, id="menu-close-tab")
+    if settings
+      column class=Group testId="site-settings"
+        MenuRow(icon="back", label="Back to Page Menu", last=false, danger=false, press=toggleSettings, id="settings-back")
+        text `Site Settings · ${site}` class=TypeBase padding="space-4" color="color.text"
+        MenuRow(icon="text-size", label=`Reset Zoom to 100% (now ${percent}%)`, last=true, danger=false, press=setZoom(100), id="settings-reset-zoom")
+    else
+      column gap=18 testId="menu-sheet"
+        // TODO(TODO.md#page-menu): Find on Page, Summarize and Pin Tab do nothing yet.
+        row flex-shrink=0 gap="space-3"
+          MenuTile(icon="find", label="Find on Page", press=later, id="menu-find")
+          MenuTile(icon="sparkles", label="Summarize", press=later, id="menu-summarize")
+          MenuTile(icon="pin", label="Pin Tab", press=later, id="menu-pin")
+          MenuTile(icon="share", label="Share", press=sharePage, id="menu-share")
+        // TODO(TODO.md#page-menu): Reader Mode, Translate and Request Desktop Site do nothing yet.
+        column flex-shrink=0 class=Group
+          MenuRow(icon="reader", label="Reader Mode", last=false, danger=false, press=later, id="menu-reader")
+          MenuRow(icon="globe", label="Translate", last=false, danger=false, press=later, id="menu-translate")
+          row height=54 align-items="center" gap=14 padding-left=18 padding-right=10 border-bottom-width=1 border-bottom-style="solid" border-bottom-color="color.border"
+            row width=24 justify-content="center" flex-shrink=0
+              Icon(name="text-size", size=17, color="color.text", weight=500)
+            text "Page Zoom" class=TypeBase color="color.text" flex=1
+            row height=36 align-items="center" border-radius="radius.md" background-color="neutral-50"
+              text `${percent}%` width=56 text-align="center" font-size=15 font-weight=500 color="color.text-secondary" testId="menu-zoom"
+              box width=1 height=18 background-color="color.border"
+              button press=setZoom(percent - 25) disabled=(percent <= 50 or site == "") class=Bare width=40 height=36 display="flex" align-items="center" justify-content="center" aria-label="Zoom Out" testId="menu-zoom-out"
+                Icon(name="minus", size=14, color="color.text", weight=600)
+              box width=1 height=18 background-color="color.border"
+              button press=setZoom(percent + 25) disabled=(percent >= 200 or site == "") class=Bare width=40 height=36 display="flex" align-items="center" justify-content="center" aria-label="Zoom In" testId="menu-zoom-in"
+                Icon(name="plus", size=14, color="color.text", weight=600)
+          MenuRow(icon="desktop", label="Request Desktop Site", last=true, danger=false, press=later, id="menu-desktop")
+        column flex-shrink=0 class=Group
+          MenuRow(icon="sliders", label="Site Settings", last=false, danger=false, press=toggleSettings, id="menu-settings")
+          MenuRow(icon="close-circle", label="Close Tab", last=true, danger=true, press=closeTab, id="menu-close-tab")
