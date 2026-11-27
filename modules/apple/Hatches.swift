@@ -12,6 +12,12 @@ import WebKit
 final class AppHatches: ExactModule {
     #if os(iOS)
     private let pinch = TabOverviewPinch()
+
+    override func elementConfiguration(_ element: ExactElement, _ configuration: AnyObject) {
+        if element.hatch == .page, let configuration = configuration as? WKWebViewConfiguration {
+            configuration.defaultWebpagePreferences.preferredContentMode = pageContentMode(element)
+        }
+    }
     #endif
 
     override func element(_ element: ExactElement) {

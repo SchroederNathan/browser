@@ -15,10 +15,21 @@ import UIKit
 #endif
 import WebKit
 
+#if os(iOS)
+func pageContentMode(_ element: ExactElement) -> WKWebpagePreferences.ContentMode {
+    element.data[.desktop] == "true" ? .desktop : .mobile
+}
+#endif
+
 /// Built (`element.isNew`) and changed (a data word moved): configure the web view Exact made.
 func pageHatch(_ element: ExactElement) {
     #if os(iOS)
     guard let web = element.platform as? WKWebView else { return }
+    let mode = pageContentMode(element)
+    if let preferences = web.configuration.defaultWebpagePreferences, preferences.preferredContentMode != mode {
+        preferences.preferredContentMode = mode
+        web.reload()
+    }
     let scroll = web.scrollView
     // The safe area becomes the scroll view's inset.
     scroll.contentInsetAdjustmentBehavior = .always
@@ -39,6 +50,15 @@ func pageHatch(_ element: ExactElement) {
         web.obscuredContentInsets = UIEdgeInsets(top: top, left: 0, bottom: bar, right: 0)
     }
     keepPageUnderBar(web)
+    let request = Int(element.data[.find] ?? "") ?? 0
+    let previous = objc_getAssociatedObject(web, &findRequestKey) as? Int
+    if request != previous {
+        objc_setAssociatedObject(web, &findRequestKey, request, .OBJC_ASSOCIATION_RETAIN_NONATOMIC)
+        if !element.isNew, previous != nil, request > 0 {
+            web.isFindInteractionEnabled = true
+            web.findInteraction?.presentFindNavigator(showingReplace: false)
+        }
+    }
     if element.isNew { element.diagnostics.log("page insets follow the safe area and the bar") }
     #endif
 }
@@ -48,11 +68,13 @@ func pageHatchEnded(_ element: ExactElement) {
     #if os(iOS)
     guard let web = element.platform as? WKWebView else { return }
     objc_setAssociatedObject(web, &stripWatchKey, nil, .OBJC_ASSOCIATION_RETAIN_NONATOMIC)
+    objc_setAssociatedObject(web, &findRequestKey, nil, .OBJC_ASSOCIATION_RETAIN_NONATOMIC)
     #endif
 }
 
 #if os(iOS)
 private var stripWatchKey: UInt8 = 0
+private var findRequestKey: UInt8 = 0
 
 /// When a page has a fixed bar along its bottom edge, WebKit paints that bar's colour over the
 /// whole covered strip below it (a `WKColorExtensionView` in the scroll view), so the page does
