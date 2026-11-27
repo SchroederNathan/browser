@@ -112,8 +112,13 @@ component MenuTile
 
 component MenuSheet
   props
+    canFind: bool
+    findOnPage: action
     closeTab: action
     sharePage: action
+    canRequestDesktop: bool
+    desktopSite: bool
+    toggleDesktopSite: action
     later: action
     percent: number
     site: string
@@ -129,13 +134,14 @@ component MenuSheet
         MenuRow(icon="text-size", label=`Reset Zoom to 100% (now ${percent}%)`, last=true, danger=false, press=setZoom(100), id="settings-reset-zoom")
     else
       column gap=18 testId="menu-sheet"
-        // TODO(TODO.md#page-menu): Find on Page, Summarize and Pin Tab do nothing yet.
+        // TODO(TODO.md#page-menu): Summarize and Pin Tab do nothing yet.
         row flex-shrink=0 gap="space-3"
-          MenuTile(icon="find", label="Find on Page", press=later, id="menu-find")
+          if canFind
+            MenuTile(icon="find", label="Find on Page", press=findOnPage, id="menu-find")
           MenuTile(icon="sparkles", label="Summarize", press=later, id="menu-summarize")
           MenuTile(icon="pin", label="Pin Tab", press=later, id="menu-pin")
           MenuTile(icon="share", label="Share", press=sharePage, id="menu-share")
-        // TODO(TODO.md#page-menu): Reader Mode, Translate and Request Desktop Site do nothing yet.
+        // TODO(TODO.md#page-menu): Reader Mode and Translate do nothing yet.
         column flex-shrink=0 class=Group
           MenuRow(icon="reader", label="Reader Mode", last=false, danger=false, press=later, id="menu-reader")
           MenuRow(icon="globe", label="Translate", last=false, danger=false, press=later, id="menu-translate")
@@ -151,7 +157,8 @@ component MenuSheet
               box width=1 height=18 background-color="color.border"
               button press=setZoom(percent + 25) disabled=(percent >= 200 or site == "") class=Bare width=40 height=36 display="flex" align-items="center" justify-content="center" aria-label="Zoom In" testId="menu-zoom-in"
                 Icon(name="plus", size=14, color="color.text", weight=600)
-          MenuRow(icon="desktop", label="Request Desktop Site", last=true, danger=false, press=later, id="menu-desktop")
+          if canRequestDesktop
+            MenuRow(icon="desktop", label=(desktopSite ? "Request Mobile Site" : "Request Desktop Site"), last=true, danger=false, press=toggleDesktopSite, id="menu-desktop")
         column flex-shrink=0 class=Group
           MenuRow(icon="sliders", label="Site Settings", last=false, danger=false, press=toggleSettings, id="menu-settings")
           MenuRow(icon="close-circle", label="Close Tab", last=true, danger=true, press=closeTab, id="menu-close-tab")

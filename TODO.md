@@ -23,15 +23,14 @@ While the field holds text, the clear button (`clear`) is in its place.
 
 Design: Paper "03 Page Menu". Code: `sheets.contract`, `MenuSheet`.
 
-- [ ] `menu-find`, Find on Page: search the page text and step through the matches.
 - [ ] `menu-summarize`, Summarize: summarize the page. Decide the model and where it runs first.
 - [ ] `menu-pin`, Pin Tab: keep a tab at the start of the grid. `Tab` (`tabs.contract`) needs a `pinned` field.
 - [ ] `menu-reader`, Reader Mode: show the page's article text only.
 - [ ] `menu-translate`, Translate: translate the page. Exact has `@exact/translation`.
-- [ ] `menu-desktop`, Request Desktop Site: load the page with a desktop user agent.
 
 These page menu controls work now: Back, Forward, Copy Link, Reload, Share, Close Tab, Page Zoom,
 and Site Settings → Reset Zoom. Site permissions and data management are not implemented.
+On iOS, Find on Page and Request Desktop/Mobile Site also work on the current tab.
 
 ## Private tabs
 

@@ -422,6 +422,21 @@ Page Zoom changes the frame, not the browser controls. The page menu offers 50â€
 across paths, tabs, and launches. Private tabs share a separate in-memory preference until the
 last private tab closes. Site Settings can remove the preference, returning that site to 100%.
 
+### Find on Page
+
+On iOS, Find on Page closes the page menu and opens the current web viewâ€™s system find navigator.
+WebKit handles the query, match highlighting and stepping between matches. The app keeps only the
+target tab ID and a request counter, neither persisted. A newly mounted frame takes its current
+counter as a baseline; switching tabs or changing the page insets does not reopen Find. The web
+menu omits Find because the app cannot search arbitrary cross-origin frames there.
+
+### Request Desktop Site
+
+On iOS each tab starts in mobile mode. The page menu requests the opposite mode and closes. The
+page hatch sets WebKit's preferred content mode before reloading the current history entry in the
+same web view. Links opened in that tab keep its mode. Other tabs, including private tabs, keep
+their own. The web build omits the control because it cannot choose an iframe's user agent.
+
 ### Page insets
 
 Exact pins a frame's content insets to zero. `modules/apple/PageHatch.swift` gives a page a

@@ -18,10 +18,11 @@ shape Tab
   seen: number
   canGoBack: bool
   canGoForward: bool
+  desktopSite: bool
   // A private tab's frame is in a partition that is not kept.
   private: bool
 
-fn newTab(id: string, address: string, private: bool, now: number): Tab = Tab(id=id, src=address, url=address, title="", icon="", shot="", shots=0, seen=now, canGoBack=false, canGoForward=false, private=private)
+fn newTab(id: string, address: string, private: bool, now: number): Tab = Tab(id=id, src=address, url=address, title="", icon="", shot="", shots=0, seen=now, canGoBack=false, canGoForward=false, desktopSite=false, private=private)
 fn nameOf(tab: Tab): string = tab.title != "" ? tab.title : hostOf(tab.url)
 fn iconOf(tab: Tab): string = tab.icon != "" ? tab.icon : `https://${hostOf(tab.url)}/favicon.ico`
 

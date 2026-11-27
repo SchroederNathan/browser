@@ -12,6 +12,9 @@ use Fly, SheetContent, SheetShell, Fade, BarGrow, BarSettle, SheetPull, PictureI
 font "Inter"
   100 900 = "assets/fonts/InterVariable.ttf"
 
+shape Page
+  platform: string
+
 shape Segment
   x: number
   y: number
@@ -33,12 +36,15 @@ fn heightOf(text: string): number = match parseNumber(text) { case some(n) => n,
 fn shotPath(id: string, n: number): string = `app:/cache/tab-${id}-${n % 2}.png`
 
 component ExactBrowser
+  resource page = exactPage() as shape Page
   resource viewport = exactViewport() as shape Viewport
 
   state tabs = [newTab("1", "https://expo.dev/", false, 1)]
   state current = "1"
   state siteZooms: string[] = [] persist
   state privateZooms: string[] = []
+  state findTab = ""
+  state findRequest = 0
   state nextId = 2
   // What is behind the bar: a page, or the tab grid.
   state screen = "browse"
@@ -408,12 +414,19 @@ component ExactBrowser
   action reloadPage
     reload(`frame-${current}`)
     sheet = "none"
+  action toggleDesktopSite
+    tabs = tabs.map(t => t.id == current ? Tab(t, desktopSite=not t.desktopSite) : t)
+    sheet = "none"
   action copyLink
     copyText(url)
     haptic("success")
     sheet = "none"
   action sharePage
     share(url=url)
+    sheet = "none"
+  action findOnPage
+    findTab = current
+    findRequest = findRequest + 1
     sheet = "none"
   action closeCurrent
     let rest = recent.filter(t => t.id != current and t.private == activePrivate)
@@ -506,8 +519,10 @@ component ExactBrowser
       // hidden frame again stalls. @ref LLP 0001#pages
       for t in tabs key=t.id
         iframe t.src id=`frame-${t.id}` hatch="page" data-top=`${viewport.safeAreaTop}` data-home=`${viewport.safeAreaBottom}` data-bar=`${barBottom + 56}` partition=(t.private ? "private" : "persist:browser") testId=`frame-${t.id}` title=t.title
+          data-find=`${t.id == findTab ? findRequest : 0}`
           position="absolute" left=0 top=0 width="100%" height="100%" zoom=(zoomFor(t.private ? privateZooms : siteZooms, zoomSite(t.url)) / 100) border="none" display=(t.id == current ? "flex" : "none")
           apple.allowsBackForwardNavigationGestures=true
+          data-desktop=(t.desktopSite ? "true" : "false")
           navigate=started(t.id) currententrychange=moved(t.id) navigatesuccess=arrived(t.id) capture=captured(t.id) newwindow=asked
 
       if not inTabs and current == ""
@@ -570,7 +585,7 @@ component ExactBrowser
                   SearchSheet(recents=recents, icons=icons, pick=pick, fill=fill)
               else
                 scroll class=SheetContent flex=1 min-height=0 scroll=listScrolled overflow-y=(sheetTall or not sheetTaller ? "scroll" : "hidden") touch-action=(listTop ? "pan-down" : "pan-y") padding-left="space-4" padding-right="space-4" padding-bottom=(viewport.safeAreaBottom + 16) testId="sheet-scroll"
-                  MenuSheet(closeTab=closeCurrent, sharePage=sharePage, later=later, percent=percent, site=site, setZoom=setZoom)
+                  MenuSheet(closeTab=closeCurrent, sharePage=sharePage, canFind=(page.platform == "ios" and current != ""), findOnPage=findOnPage, canRequestDesktop=(page.platform == "ios"), desktopSite=(match active { case some(t) => t.desktopSite, case none => false }), toggleDesktopSite=toggleDesktopSite, later=later, percent=percent, site=site, setZoom=setZoom)
           else
             button press=pressMiddle class=Bare position="absolute" left=0 top=0 width=midW height=sideSize aria-label=(inTabs ? "New Tab" : `Address, ${hostOf(url)}`) inert=asking testId="bar-middle"
           // The address: centred in the pill and in the page menu's top row, and on its way to the
