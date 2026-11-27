@@ -28,6 +28,71 @@ test "the chevron opens the page menu, and a press beside it closes it"
   expect state sheet == "none"
   expect tree missing "menu-summarize"
 
+test "page zoom stays with its site and can be removed in Site Settings"
+  tap "bar-right"
+  clock settle
+  expect text "menu-zoom" == "100%"
+  tap "menu-zoom-in"
+  tap "menu-zoom-in"
+  tap "menu-zoom-out"
+  expect text "menu-zoom" == "125%"
+  tap "scrim"
+  clock settle
+  tap "bar-left"
+  clock +400
+  clock settle
+  tap "bar-middle"
+  type "address" "example.org"
+  type "address" key "Enter"
+  clock settle
+  tap "bar-right"
+  clock settle
+  expect text "menu-zoom" == "100%"
+  tap "scrim"
+  clock settle
+  tap "bar-left"
+  clock +400
+  clock settle
+  tap "bar-middle"
+  type "address" "expo.dev/about"
+  type "address" key "Enter"
+  clock settle
+  tap "bar-right"
+  clock settle
+  expect text "menu-zoom" == "125%"
+  tap "menu-settings"
+  tap "settings-reset-zoom"
+  tap "settings-back"
+  expect text "menu-zoom" == "100%"
+  expect state siteZooms.length == 0
+
+test "private zoom is isolated and forgotten with the last private tab"
+  tap "bar-right"
+  clock settle
+  tap "menu-zoom-in"
+  tap "scrim"
+  clock settle
+  tap "bar-left"
+  clock +400
+  clock settle
+  tap "private"
+  clock settle
+  tap "bar-middle"
+  type "address" "expo.dev/private"
+  type "address" key "Enter"
+  clock settle
+  tap "bar-right"
+  clock settle
+  expect text "menu-zoom" == "100%"
+  tap "menu-zoom-out"
+  tap "menu-zoom-out"
+  expect text "menu-zoom" == "50%"
+  expect state privateZooms == ["expo.dev 50"]
+  tap "menu-close-tab"
+  clock settle
+  expect state privateZooms.length == 0
+  expect state siteZooms == ["expo.dev 125"]
+
 test "Find on Page targets the current iOS tab and closes the menu" on ios
   tap "bar-right"
   clock settle

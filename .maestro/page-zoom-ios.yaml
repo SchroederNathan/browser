@@ -1,0 +1,30 @@
+appId: com.nate.exactbrowser
+---
+- launchApp:
+    clearState: true
+- takeScreenshot: page-before
+- tapOn:
+    point: '89%,93%'
+- assertVisible: '100%'
+- takeScreenshot: zoom-100
+- tapOn: 'Zoom In'
+- assertVisible: '125%'
+- tapOn: 'Zoom In'
+- assertVisible: '150%'
+- tapOn: 'Zoom Out'
+- assertVisible: '125%'
+- takeScreenshot: zoom-125
+- tapOn:
+    point: '50%,8%'
+- takeScreenshot: page-after
+- stopApp
+- launchApp
+- tapOn:
+    point: '89%,93%'
+- assertVisible: '125%'
+- tapOn: 'Site Settings'
+- tapOn: 'Reset Zoom to 100% \(now 125%\)'
+- assertVisible: 'Reset Zoom to 100% \(now 100%\)'
+- tapOn: 'Back to Page Menu'
+- assertVisible: '100%'
+- takeScreenshot: zoom-reset

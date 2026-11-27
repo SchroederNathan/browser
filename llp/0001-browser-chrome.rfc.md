@@ -415,6 +415,13 @@ tab is made, so the frame keeps its page; `navigate` moves it.
 return to the page by more than three seconds on the simulator. The front tab's frame stays shown
 under the grid. Frames of the other tabs are hidden.
 
+### Page zoom
+
+Page Zoom changes the frame, not the browser controls. The page menu offers 50–200% in
+25-point steps. Regular tabs remember zoom by HTTP(S) host (including any explicit port),
+across paths, tabs, and launches. Private tabs share a separate in-memory preference until the
+last private tab closes. Site Settings can remove the preference, returning that site to 100%.
+
 ### Find on Page
 
 On iOS, Find on Page closes the page menu and opens the current web view’s system find navigator.

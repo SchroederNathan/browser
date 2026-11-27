@@ -1,0 +1,6 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<testsuites>
+  <testsuite name="Test Suite" device="iPhone Duo - iOS 27.2 - 9952087A-10B1-4F40-B556-D8F8A0DBD948" tests="1" failures="0" time="66.454" timestamp="2026-11-27T13:31:37">
+    <testcase id="flow" name="flow" classname="flow" file="flow.yaml" time="66.014" timestamp="2026-11-27T13:31:37" status="SUCCESS"/>
+  </testsuite>
+</testsuites>

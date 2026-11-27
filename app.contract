@@ -2,6 +2,7 @@
 // bar's three glass surfaces sit over it and become the search sheet, the page menu and the tab
 // grid's controls. @ref LLP 0001
 use Icon from "./icons.contract"
+use zoomSite, zoomFor, saveZoom from "./zoom.contract"
 use hostOf, isAddress, addressOf, shortAddress from "./address.contract"
 use Tab, TabPage, newTab from "./tabs.contract"
 use SheetField, SearchSheet, MenuSheet from "./sheets.contract"
@@ -40,6 +41,8 @@ component ExactBrowser
 
   state tabs = [newTab("1", "https://expo.dev/", false, 1)]
   state current = "1"
+  state siteZooms: string[] = [] persist
+  state privateZooms: string[] = []
   state findTab = ""
   state findRequest = 0
   state nextId = 2
@@ -114,6 +117,8 @@ component ExactBrowser
   derive active = first(tabs.filter(t => t.id == current))
   derive url = match active { case some(t) => t.url, case none => "" }
   derive activePrivate = match active { case some(t) => t.private, case none => privatePage }
+  derive site = zoomSite(url)
+  derive percent = zoomFor(activePrivate ? privateZooms : siteZooms, site)
   derive recent = sortBy(tabs, t => t.seen, "desc")
   derive regularTabs = tabs.filter(t => not t.private)
   derive privateTabs = tabs.filter(t => t.private)
@@ -436,6 +441,18 @@ component ExactBrowser
   action later
     sheet = sheet
 
+  action setZoom(value: number)
+    if site != ""
+      if activePrivate
+        privateZooms = saveZoom(privateZooms, site, max(50, min(200, value)))
+      else
+        siteZooms = saveZoom(siteZooms, site, max(50, min(200, value)))
+
+  task clearPrivateZoom when privateTabs.length == 0 and privateZooms.length > 0
+    after(1, forgetPrivateZoom)
+  action forgetPrivateZoom
+    privateZooms = []
+
   // The tab grid.
   action paged(x: number, y: number)
     privatePage = x < w / 2
@@ -503,7 +520,7 @@ component ExactBrowser
       for t in tabs key=t.id
         iframe t.src id=`frame-${t.id}` hatch="page" data-top=`${viewport.safeAreaTop}` data-home=`${viewport.safeAreaBottom}` data-bar=`${barBottom + 56}` partition=(t.private ? "private" : "persist:browser") testId=`frame-${t.id}` title=t.title
           data-find=`${t.id == findTab ? findRequest : 0}`
-          position="absolute" left=0 top=0 width=w height=h border="none" display=(t.id == current ? "flex" : "none")
+          position="absolute" left=0 top=0 width="100%" height="100%" zoom=(zoomFor(t.private ? privateZooms : siteZooms, zoomSite(t.url)) / 100) border="none" display=(t.id == current ? "flex" : "none")
           apple.allowsBackForwardNavigationGestures=true
           data-desktop=(t.desktopSite ? "true" : "false")
           navigate=started(t.id) currententrychange=moved(t.id) navigatesuccess=arrived(t.id) capture=captured(t.id) newwindow=asked
@@ -568,7 +585,7 @@ component ExactBrowser
                   SearchSheet(recents=recents, icons=icons, pick=pick, fill=fill)
               else
                 scroll class=SheetContent flex=1 min-height=0 scroll=listScrolled overflow-y=(sheetTall or not sheetTaller ? "scroll" : "hidden") touch-action=(listTop ? "pan-down" : "pan-y") padding-left="space-4" padding-right="space-4" padding-bottom=(viewport.safeAreaBottom + 16) testId="sheet-scroll"
-                  MenuSheet(closeTab=closeCurrent, sharePage=sharePage, canFind=(page.platform == "ios" and current != ""), findOnPage=findOnPage, canRequestDesktop=(page.platform == "ios"), desktopSite=(match active { case some(t) => t.desktopSite, case none => false }), toggleDesktopSite=toggleDesktopSite, later=later)
+                  MenuSheet(closeTab=closeCurrent, sharePage=sharePage, canFind=(page.platform == "ios" and current != ""), findOnPage=findOnPage, canRequestDesktop=(page.platform == "ios"), desktopSite=(match active { case some(t) => t.desktopSite, case none => false }), toggleDesktopSite=toggleDesktopSite, later=later, percent=percent, site=site, setZoom=setZoom)
           else
             button press=pressMiddle class=Bare position="absolute" left=0 top=0 width=midW height=sideSize aria-label=(inTabs ? "New Tab" : `Address, ${hostOf(url)}`) inert=asking testId="bar-middle"
           // The address: centred in the pill and in the page menu's top row, and on its way to the
