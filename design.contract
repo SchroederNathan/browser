@@ -260,6 +260,15 @@ keyframes hold-then-fade
 style GridScreen
   -exact-exit-animation="hold-then-fade 420ms linear both"
 
+style PinchGrid
+  pointer-events="none"
+
+style GridItem
+  -exact-layout-transition="-exact-spring(420, 41, 1)"
+
+style StillGridItem
+  -exact-layout-transition="none"
+
 // The white thumb of the control above the tab grid. It follows the pager's scroll: one page
 // of scroll moves it one segment (72 points and the 4-point gap). @ref LLP 0001#tab-pager
 keyframes thumb-slide
