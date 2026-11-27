@@ -6,7 +6,7 @@ use hostOf, isAddress, addressOf, shortAddress from "./address.contract"
 use Tab, TabPage, newTab from "./tabs.contract"
 use SheetField, SearchSheet, MenuSheet from "./sheets.contract"
 use BinCard, CloseAllAlert from "./close-all.contract"
-use Fly, SheetContent, SheetShell, Fade, BarGrow, BarSettle, SheetPull, PictureIn, PictureOut, BarFill, AddressHere, AddressAway, AddressIn, AddressOut, BesideLowercase, ScrimIn, ScrimOut, GridScreen, SegmentThumb, Thumbnail, ThumbnailFace, Bare from "./design.contract"
+use Fly, SheetContent, SheetShell, Fade, BarSurface, chromeSpring, SheetPull, PictureIn, PictureOut, BarFill, AddressHere, AddressAway, AddressIn, AddressOut, BesideLowercase, ScrimIn, ScrimOut, GridScreen, SegmentThumb, ThumbStill, Thumbnail, ThumbnailFace, Bare from "./design.contract"
 
 font "Inter"
   100 900 = "assets/fonts/InterVariable.ttf"
@@ -20,6 +20,7 @@ shape Segment
 shape Viewport
   width: number
   height: number
+  prefersReducedMotion: bool
   keyboardHeight: number
   horizontalViewportSegments: number
   segments: Segment[]
@@ -75,6 +76,7 @@ component ExactBrowser
   // The tab grid's pager: the page it shows, and the offset it opens at.
   state privatePage = false
   state pagerStart = 0
+  state pagerFraction = 1
   // The close-all alert: "none", or its phase (`CloseAllAlert`). `binCards` are the cards that
   // were in view when it opened, and their places in the grid. @ref LLP 0001#close-all
   state closing = "none"
@@ -112,6 +114,7 @@ component ExactBrowser
   derive regularTabs = tabs.filter(t => not t.private)
   derive privateTabs = tabs.filter(t => t.private)
   derive shownTabs = privatePage ? privateTabs : regularTabs
+  derive thumbStretch = 76 * min(pagerFraction, 1 - pagerFraction)
   derive asking = closing != "none"
   derive awayIds = asking ? binCards.map(c => c.tab.id) : []
 
@@ -119,12 +122,12 @@ component ExactBrowser
   derive barW = regular ? 381 : w - 24
   derive barX = regular ? paneX + (paneW - 381) / 2 : 12
   derive barBottom = regular ? (portrait ? 32 : 24) : 34
-  derive sideSize = inTabs ? 52 : 48
+  derive sideSize = 48
   // While a sheet is open the side buttons are off the screen: past its sides where the sheet is
   // the full width, and below it where the sheet is narrower. @ref LLP 0001#one-spring
-  derive sideBottom = open and regular ? -76 : inTabs ? 40 : barBottom
-  derive leftX = open and not regular ? -76 : inTabs ? paneX + 24 : barX
-  derive rightX = open and not regular ? w + 24 : inTabs ? paneX + paneW - 76 : barX + barW - 48
+  derive sideBottom = open and regular ? -76 : barBottom
+  derive leftX = open and not regular ? -76 : barX
+  derive rightX = open and not regular ? w + 24 : barX + barW - sideSize
   // The sheets. A sheet is a panel as tall as the screen allows, attached to the bottom of the
   // screen. At rest only its top part is on the screen, and a pull up shows all of it. It reaches
   // 44 points below what it shows so its four corners are one radius. @ref LLP 0001#sheet-height
@@ -337,15 +340,11 @@ component ExactBrowser
       composing = false
   action pressRight
     if inTabs
-      if current != ""
-        let card = frame(`preview-${current}`)
-        if card.width > 0
-          flyX = card.x
-          flyY = card.y
-          flyScale = card.width / w
-          flight = "lift"
-        else
-          screen = "browse"
+      match first(recent.filter(t => t.private == privatePage))
+        case some(t)
+          openTab(activePrivate == privatePage and current != "" ? current : t.id)
+        case none
+          pressMiddle()
     else if not leaving
       sheetTall = false
       listTop = true
@@ -425,6 +424,7 @@ component ExactBrowser
 
   // The tab grid.
   action paged(x: number, y: number)
+    pagerFraction = max(0, min(1, x / w))
     privatePage = x < w / 2
   action showPrivate
     scrollIntoView("page-private", block="nearest", inline="start", behavior="smooth")
@@ -503,21 +503,19 @@ component ExactBrowser
           scroll id="pager" position="absolute" left=0 top=0 width=w height=h display="flex" flex-direction="row" overflow-x="scroll" overflow-y="hidden" scroll-snap-type="x mandatory" scrollbar-width="none" scroll-timeline="--pager x" scrollLeft=pagerStart scroll=paged testId="pager"
             TabPage(id="page-private", tabs=privateTabs, current=current, empty="No private tabs", width=w, height=h, top=gridTop, columns=columns, cardWidth=cardW, previewHeight=previewH, hingeGap=hingeGap, away=awayIds, open=openTab, close=closeTab)
             TabPage(id="page-regular", tabs=regularTabs, current=current, empty="No tabs", width=w, height=h, top=gridTop, columns=columns, cardWidth=cardW, previewHeight=previewH, hingeGap=hingeGap, away=awayIds, open=openTab, close=closeTab)
-          box position="absolute" left=0 top=0 width=w height=(gridTop - 12) pointer-events="none" background-image="linear-gradient(0deg, rgba(245, 245, 245, 0) 0%, #f5f5f5 55%)"
           // The control is 156 by 48 with its 4-point padding inside, so the thumb (72 by 40) has 4
           // points on every side.
           row position="absolute" left=((w - 156) / 2) top=(gridInsetTop + 4) width=156 height=48 box-sizing="border-box" padding=4 gap=4 align-items="center" border-radius="radius.full" background-color="color.surface-raised"
-            box class=SegmentThumb animation-range=`0px ${w}px`
+            box class=(viewport.prefersReducedMotion ? ThumbStill : SegmentThumb) left=(4 + (privatePage ? 0 : 76) - (privatePage or viewport.prefersReducedMotion ? 0 : thumbStretch)) width=(72 + (viewport.prefersReducedMotion ? 0 : thumbStretch))
             button press=showPrivate class=Bare position="relative" width=72 height=44 margin="-2px 0px" display="flex" align-items="center" justify-content="center" border-radius="radius.full" aria-label="Private Tabs" aria-pressed=privatePage testId="private"
               Icon(name="private", size=20, color=(privatePage ? "color.text" : "color.text-secondary"), weight=500)
             button press=showRegular class=Bare position="relative" width=72 height=44 margin="-2px 0px" display="flex" align-items="center" justify-content="center" border-radius="radius.full" aria-label=`${regularTabs.length} ${regularTabs.length == 1 ? "tab" : "tabs"}` aria-pressed=(not privatePage) testId="regular"
               row min-width=22 height=22 padding-left=3 padding-right=3 align-items="center" justify-content="center" border-radius=7 border-width=2 border-style="solid" border-color=(privatePage ? "color.text-secondary" : "color.text")
                 text `${regularTabs.length}` font-size=12 font-weight=700 color=(privatePage ? "color.text-secondary" : "color.text") testId="count"
-          box position="absolute" left=0 bottom=0 width=w height=132 pointer-events="none" background-image="linear-gradient(180deg, rgba(245, 245, 245, 0) 0%, #f5f5f5 45%)"
 
       // A page's snapshot on its way between the screen and its card. It is drawn here, under the
       // bar, and moves by a transform, so the bar stays over it. @ref LLP 0001#tab-flights
-      if flight != "none"
+      if flight != "none" and not viewport.prefersReducedMotion
         match active
           case some(t)
             if t.shot != ""
@@ -536,11 +534,14 @@ component ExactBrowser
           button press=closeSheet class=Bare position="absolute" left=0 top=sheetTop width=sheetX height=(h - sheetTop) aria-label="Close" testId="scrim-leading"
           button press=closeSheet class=Bare position="absolute" left=(sheetX + sheetW) top=sheetTop width=(w - sheetX - sheetW) height=(h - sheetTop) aria-label="Close" testId="scrim-trailing"
 
+      if asking
+        CloseAllAlert(phase=closing, cards=binCards, current=closeSelected, private=privatePage, count=closeCount, others=closeOthers, width=w, height=h, centerX=(paneX + paneW / 2), safeTop=viewport.safeAreaTop, safeBottom=viewport.safeAreaBottom, cardWidth=cardW, previewHeight=previewH, confirm=closeAll, cancel=keepAll)
+
       // The bar's three glass surfaces. Each keeps its place in the tree through every state, so
       // one spring carries it between them. @ref LLP 0001#one-spring
       // A finger that pulls the sheet moves this layer. The middle surface morphs inside it.
       SheetPull(pull=pull, open=open, width=w, height=h)
-        column class=(open ? BarGrow : BarSettle) pan=pullSheet panrelease=dropSheet touch-action="none" pointer-events="auto" color-scheme="light" position="absolute" left=midX bottom=midBottom width=midW height=midH border-radius=midRadius overflow="clip" -exact-glass-tint=(open ? "glass.sheet" : inTabs ? "glass.accent" : "transparent") box-shadow=(open ? "0 -12px 40px rgba(40, 10, 30, 0.18)" : inTabs ? "0 6px 16px rgba(0, 0, 0, 0.16)" : "0 8px 24px rgba(40, 10, 20, 0.18)") testId="bar-middle-surface"
+        column class=BarSurface -exact-layout-transition=chromeSpring(viewport.prefersReducedMotion, open) pan=pullSheet panrelease=dropSheet touch-action="none" pointer-events="auto" color-scheme="light" position="absolute" left=midX bottom=midBottom width=midW height=midH border-radius=midRadius overflow="clip" -exact-glass-tint=(open ? "glass.sheet" : inTabs ? "glass.accent" : "transparent") box-shadow=(open ? "0 -12px 40px rgba(40, 10, 30, 0.18)" : inTabs ? "0 6px 16px rgba(0, 0, 0, 0.16)" : "0 8px 24px rgba(40, 10, 20, 0.18)") testId="bar-middle-surface"
           box class=BarFill background-color="color.accent" opacity=(inTabs and not open ? 0.8 : 0)
           if open
             // What the sheet holds ends at the bottom of the screen, or at the keyboard's top. It
@@ -568,7 +569,7 @@ component ExactBrowser
           box class=(inTabs and not open ? PictureIn : PictureOut)
             Icon(name="plus", size=20, color="color.on-accent", weight=600)
 
-      column class=(open ? BarGrow : BarSettle) color-scheme="light" position="absolute" left=leftX bottom=sideBottom width=sideSize height=sideSize border-radius=(sideSize / 2) overflow="clip" -exact-glass-tint=(inTabs ? "glass.control" : "transparent") testId="bar-left-surface"
+      column class=BarSurface -exact-layout-transition=chromeSpring(viewport.prefersReducedMotion, open) color-scheme="light" position="absolute" left=leftX bottom=sideBottom width=sideSize height=sideSize border-radius=(sideSize / 2) overflow="clip" -exact-glass-tint=(inTabs ? "glass.control" : "transparent") testId="bar-left-surface"
         box class=BarFill background-color="color.surface-raised" opacity=(inTabs ? 0.7 : 0)
         button press=pressLeft class=Bare position="absolute" left=0 top=0 width=sideSize height=sideSize aria-label=(inTabs ? "Close All Tabs" : "Tabs") inert=(open or asking) testId="bar-left"
           box class=(inTabs ? PictureOut : PictureIn)
@@ -593,14 +594,10 @@ component ExactBrowser
           box class=(inTabs ? PictureIn : PictureOut)
             Icon(name="close-all", size=19, color="color.text", weight=500)
 
-      column class=(open ? BarGrow : BarSettle) color-scheme="light" position="absolute" left=rightX bottom=sideBottom width=sideSize height=sideSize border-radius=(sideSize / 2) overflow="clip" -exact-glass-tint=(inTabs ? "glass.control" : "transparent") testId="bar-right-surface"
+      column class=BarSurface -exact-layout-transition=chromeSpring(viewport.prefersReducedMotion, open) color-scheme="light" position="absolute" left=rightX bottom=sideBottom width=sideSize height=sideSize border-radius=(sideSize / 2) overflow="clip" -exact-glass-tint=(inTabs ? "glass.control" : "transparent") testId="bar-right-surface"
         box class=BarFill background-color="color.surface-raised" opacity=(inTabs ? 0.7 : 0)
         button press=pressRight class=Bare position="absolute" left=0 top=0 width=sideSize height=sideSize aria-label=(inTabs ? "Done" : "Page Menu") inert=(open or asking) testId="bar-right"
           box class=(inTabs ? PictureOut : PictureIn)
             Icon(name="chevron-up", size=17, color="-exact-label", weight=600)
           box class=(inTabs ? PictureIn : PictureOut)
             Icon(name="checkmark", size=18, color="color.text", weight=600)
-
-      // Over everything, the bar too. @ref LLP 0001#close-all
-      if asking
-        CloseAllAlert(phase=closing, cards=binCards, current=closeSelected, private=privatePage, count=closeCount, others=closeOthers, width=w, height=h, centerX=(paneX + paneW / 2), safeTop=viewport.safeAreaTop, safeBottom=viewport.safeAreaBottom, cardWidth=cardW, previewHeight=previewH, confirm=closeAll, cancel=keepAll)

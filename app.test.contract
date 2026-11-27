@@ -237,6 +237,12 @@ test "the close-all alert counts the tabs on the page and names the tabs that st
   clock +600
   expect state tabs.length == 1
   expect state tabs.0 .private == true
+  tap "private"
+  clock settle
+  tap "bar-right"
+  clock +100
+  expect state screen == "browse"
+  expect state current == "3"
 
 test "a tab's close button closes it"
   tap "bar-left"
@@ -263,3 +269,12 @@ test "the close-all alert shows the cards in view in its bin"
   expect tree has "close-all-bin"
   expect text "close-all-title" == "Close Tab"
   expect text "close-all-confirm" == "Close Tab"
+
+test "Done after closing the last tab opens a new address field"
+  tap "bar-left"
+  clock +400
+  clock settle
+  tap "tab-close-1"
+  tap "bar-right"
+  expect state composing == true
+  expect state sheet == "search"

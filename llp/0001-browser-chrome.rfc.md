@@ -197,6 +197,8 @@ judgment. `[observed]` Both cards can be seen over a white page and over a dark 
 
 ## Bar geometry
 
+The grid uses the same outer footprint and button diameter as browsing; only the middle pill changes width. The grid has no top or bottom gradient.
+
 Values are from the Paper screens. `[observed]`
 
 | Layout | Bar | Sheet |
@@ -456,9 +458,9 @@ A page's snapshot flies between the screen and its card under the bar, so the ba
 every moment (requirement 26). The snapshot is one image in the root, after the grid and before the
 bar's surfaces. It is as large as the screen and moves by a transform from its top left corner: a
 card's preview has the screen's aspect ratio, so one scale and one offset put it exactly on the
-card. `flight` says where it is, and the style `Fly` moves it over 450 ms on the smooth ease-out.
+card. `flight` says where it is, and `Fly` moves it on a critically damped spring.
 `[observed]` On the web host `verify` reported the spring on this style's transition as skipped,
-so `Fly` is not a spring.
+so the earlier implementation used a timed curve. The current flight uses a critically damped spring in both directions; Reduce Motion skips the flight.
 
 `flyX`, `flyY` and `flyScale` return to the whole screen when a flight ends, so the next snapshot
 starts over its page. A press on the pill or the chevron does nothing while the tabs button waits
@@ -569,17 +571,7 @@ alert:
 - `[observed]` The floor shadow showed through the bin's base as the bin faded. Each shadow is cut
   away where the base covers it (`clip-path`).
 
-*Agent decision.* The bin is a frosted white fill over an ellipse for its opening, close to the
-recording's rendered bin. It has the recording's cup shape: its bottom is 0.78 of its rim's width,
-and its bottom curves as its rim does. A `clip-path` gives the body this outline. Its shadow lies
-on the floor: a dark contact shadow that ends a few points past the base, and a wide soft one,
-each a little to the right of the bin. The body is shaded as a round thing lit from the front left: a soft light
-down its left side, and shade at its right side and its bottom. The lip along the front of the rim
-is a crescent, 4 points deep at the front and none at the ends, with a band of shade under it, so
-no line of the rim ends sharply. The rim's front is the opening's outer edge, so the two meet. From `ready`, the cut
-follows the bin's walls, so a falling card does not show beside the narrow bottom. A card has the
-screen's tall shape, so the stack scales the cards to fit the bin's depth, and the bin is deeper
-than it is wide.
+The current bin uses the Apple wastebasket emoji with its original alpha channel. Its square aspect ratio stays fixed on Duo. The returning stack sits below the chrome during Cancel; the modal remains above the chrome in every other phase.
 
 *Agent decision.* `color.danger` is Tailwind's red-600 in Display P3,
 `oklch(57.7% 0.245 27.3)`, which iOS draws as `#e6000b` in a screenshot. The recording's button is
@@ -598,8 +590,7 @@ shows, so a screen reader reaches only the alert. On the web, Escape does not cl
 Private tabs and regular tabs are two pages of one horizontal `scroll` with mandatory snap
 (requirement 13). The private page is on the left, as its segment is in the control. A swipe pages
 between them. A press on a segment calls `scrollIntoView` with `behavior="smooth"`, so a press and
-a swipe are the same motion. The control's white thumb is a scroll-driven animation on the pager's
-timeline: one page of scroll moves it one segment.
+a swipe are the same motion. The thumb stretches with scroll progress, holding the departure edge until halfway. It then anchors to the destination and settles on a critically damped spring. Done opens the current or most recent tab on the visible page; if that page is empty it opens the new-tab address field.
 
 *Agent decision.* The second request asks for the pager, so private tabs now exist. A private
 tab's frame uses the partition `private`, which has no `persist:` prefix. The plus button makes a

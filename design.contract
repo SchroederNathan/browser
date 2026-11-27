@@ -46,15 +46,11 @@ style BesideLowercase
 // The bar's three glass surfaces. One spring moves all of them: the middle surface as it grows
 // into a sheet, and the side buttons as they leave the screen. A surface grows with a small
 // bounce and returns faster with none. @ref LLP 0001#one-spring @ref LLP 0001#liquid-glass
-style BarGrow
-  backgroundMaterial="glass"
-  border-width=0
-  -exact-layout-transition="-exact-spring(300, 30, 1)"
+fn chromeSpring(still: bool, sheet: bool): string = still ? "none" : sheet ? "-exact-spring(300, 30, 1)" : "-exact-spring(225, 30, 1)"
 
-style BarSettle
+style BarSurface
   backgroundMaterial="glass"
   border-width=0
-  -exact-layout-transition="-exact-spring(420, 41, 1)"
 
 // The layer around the middle surface that a finger pulls. It follows the finger by `translate`
 // with no transition. When the finger lifts, it returns on the spring that then moves the surface:
@@ -75,12 +71,12 @@ component SheetPull
       children
 
 // A snapshot of a page flying between the screen and its card. It is the largest thing that
-// moves, so it takes the longest. It moves by a transform from its top left corner, on a timed
-// ease and not a spring: on the web host `verify` reported the spring of this style as skipped.
+// moves, so it takes the longest. It moves by a transform from its top left corner, on a
+// critically damped spring.
 // @ref LLP 0001#tab-flights
 style Fly
   transform-origin="0% 0%"
-  transition="translate 450ms cubic-bezier(0.22, 1, 0.36, 1), scale 450ms cubic-bezier(0.22, 1, 0.36, 1)"
+  transition="translate -exact-spring(225, 30, 1), scale -exact-spring(225, 30, 1)"
 
 // A picture on a surface of the bar (an icon, the plus). When the surface changes its job, the
 // old picture blurs out as the new one blurs in. A blur animates only as a transition, so both
@@ -262,8 +258,15 @@ style GridScreen
 
 // The white thumb of the control above the tab grid. It follows the pager's scroll: one page
 // of scroll moves it one segment (72 points and the 4-point gap). @ref LLP 0001#tab-pager
-keyframes thumb-slide
-  to translate="76px 0px"
+style ThumbStill
+  position="absolute"
+  left=4
+  top=4
+  width=72
+  height=40
+  border-radius="radius.full"
+  background-color="color.background"
+  box-shadow="0 1px 3px rgba(0, 0, 0, 0.08)"
 
 style SegmentThumb
   position="absolute"
@@ -274,8 +277,7 @@ style SegmentThumb
   border-radius="radius.full"
   background-color="color.background"
   box-shadow="0 1px 3px rgba(0, 0, 0, 0.08)"
-  animation="thumb-slide 1s linear both"
-  animation-timeline="--pager"
+  -exact-layout-transition="-exact-spring(324, 36, 1)"
 
 // The close-all alert. Its timing is read frame by frame from the reference recording, at 60
 // frames a second. The grid behind washes out to white in about 250 ms. The words come in from
