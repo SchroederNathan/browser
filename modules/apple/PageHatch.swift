@@ -15,10 +15,21 @@ import UIKit
 #endif
 import WebKit
 
+#if os(iOS)
+func pageContentMode(_ element: ExactElement) -> WKWebpagePreferences.ContentMode {
+    element.data[.desktop] == "true" ? .desktop : .mobile
+}
+#endif
+
 /// Built (`element.isNew`) and changed (a data word moved): configure the web view Exact made.
 func pageHatch(_ element: ExactElement) {
     #if os(iOS)
     guard let web = element.platform as? WKWebView else { return }
+    let mode = pageContentMode(element)
+    if let preferences = web.configuration.defaultWebpagePreferences, preferences.preferredContentMode != mode {
+        preferences.preferredContentMode = mode
+        web.reload()
+    }
     let scroll = web.scrollView
     // The safe area becomes the scroll view's inset.
     scroll.contentInsetAdjustmentBehavior = .always

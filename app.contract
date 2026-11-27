@@ -11,14 +11,14 @@ use Fly, SheetContent, SheetShell, Fade, BarGrow, BarSettle, SheetPull, PictureI
 font "Inter"
   100 900 = "assets/fonts/InterVariable.ttf"
 
+shape Page
+  platform: string
+
 shape Segment
   x: number
   y: number
   width: number
   height: number
-
-shape PageHost
-  platform: string
 
 shape Viewport
   width: number
@@ -35,7 +35,7 @@ fn heightOf(text: string): number = match parseNumber(text) { case some(n) => n,
 fn shotPath(id: string, n: number): string = `app:/cache/tab-${id}-${n % 2}.png`
 
 component ExactBrowser
-  resource pageHost = exactPage() as shape PageHost
+  resource page = exactPage() as shape Page
   resource viewport = exactViewport() as shape Viewport
 
   state tabs = [newTab("1", "https://expo.dev/", false, 1)]
@@ -409,6 +409,9 @@ component ExactBrowser
   action reloadPage
     reload(`frame-${current}`)
     sheet = "none"
+  action toggleDesktopSite
+    tabs = tabs.map(t => t.id == current ? Tab(t, desktopSite=not t.desktopSite) : t)
+    sheet = "none"
   action copyLink
     copyText(url)
     haptic("success")
@@ -502,6 +505,7 @@ component ExactBrowser
           data-find=`${t.id == findTab ? findRequest : 0}`
           position="absolute" left=0 top=0 width=w height=h border="none" display=(t.id == current ? "flex" : "none")
           apple.allowsBackForwardNavigationGestures=true
+          data-desktop=(t.desktopSite ? "true" : "false")
           navigate=started(t.id) currententrychange=moved(t.id) navigatesuccess=arrived(t.id) capture=captured(t.id) newwindow=asked
 
       if not inTabs and current == ""
@@ -564,7 +568,7 @@ component ExactBrowser
                   SearchSheet(recents=recents, icons=icons, pick=pick, fill=fill)
               else
                 scroll class=SheetContent flex=1 min-height=0 scroll=listScrolled overflow-y=(sheetTall or not sheetTaller ? "scroll" : "hidden") touch-action=(listTop ? "pan-down" : "pan-y") padding-left="space-4" padding-right="space-4" padding-bottom=(viewport.safeAreaBottom + 16) testId="sheet-scroll"
-                  MenuSheet(closeTab=closeCurrent, sharePage=sharePage, canFind=(pageHost.platform == "ios" and current != ""), findOnPage=findOnPage, later=later)
+                  MenuSheet(closeTab=closeCurrent, sharePage=sharePage, canFind=(page.platform == "ios" and current != ""), findOnPage=findOnPage, canRequestDesktop=(page.platform == "ios"), desktopSite=(match active { case some(t) => t.desktopSite, case none => false }), toggleDesktopSite=toggleDesktopSite, later=later)
           else
             button press=pressMiddle class=Bare position="absolute" left=0 top=0 width=midW height=sideSize aria-label=(inTabs ? "New Tab" : `Address, ${hostOf(url)}`) inert=asking testId="bar-middle"
           // The address: centred in the pill and in the page menu's top row, and on its way to the

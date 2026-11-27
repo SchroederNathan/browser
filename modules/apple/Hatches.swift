@@ -7,8 +7,19 @@ import AppKit
 #else
 import UIKit
 #endif
+#if os(iOS)
+import WebKit
+#endif
 
 final class AppHatches: ExactModule {
+    #if os(iOS)
+    override func elementConfiguration(_ element: ExactElement, _ configuration: AnyObject) {
+        if element.hatch == .page, let configuration = configuration as? WKWebViewConfiguration {
+            configuration.defaultWebpagePreferences.preferredContentMode = pageContentMode(element)
+        }
+    }
+    #endif
+
     override func element(_ element: ExactElement) {
         if element.hatch == .page { pageHatch(element) }
         // exact:element (exact hatch adds a word's line above this one)
