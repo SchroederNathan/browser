@@ -34,7 +34,8 @@ These come from the request. `[confirmed]` Nathan Schroeder, 2026-11-25.
    plus icon, and its background fades to black.
 7. In the grid, the plus button opens a new tab and the search sheet grows out of the plus button.
    The left button closes all tabs after an alert asks. The check mark returns to the page it came
-   from. A press on a card opens that tab. Each of these is a shared element transition.
+   from. A press on a card opens that tab. Each of these is a shared element transition. (The
+   alert is the app's own now: see "Close all".)
 8. A card has the aspect ratio of the device's current layout.
 9. The app follows the Paper design system, and the code has a design system.
 10. Controls for features that are not built yet are on screen and do nothing. `TODO.md` lists them.
@@ -82,6 +83,18 @@ These come from the second request of 2026-11-26. `[confirmed]` Nathan Schroeder
     scrolls. A pull up makes it as tall as the screen allows. What takes focus stays above the
     keyboard.
 31. A change of the screen's size (a fold, an unfold, a turn) closes an open sheet.
+
+These come from the request of 2026-11-26 about the close-all button. `[confirmed]` Nathan
+Schroeder, 2026-11-26.
+
+32. A press on the close-all button shows the app's own alert, as a reference screen recording
+    does. The cards of the tabs in view fly into a group as shared elements.
+33. The motion follows the recording, checked frame by frame.
+34. The alert's Close button is an interactive glass surface, as the bar's surfaces are. It does
+    not animate a scale of its own. The whole button swells under a finger, not only its content.
+    Nathan Schroeder, 2026-11-27.
+35. The trash can has a trash can's shape, with shading and a blur like the recording's, and none
+    of its lines are cut off. The danger red is vivid, not washed out. Nathan Schroeder, 2026-11-27.
 
 ## Design system
 
@@ -474,6 +487,111 @@ snapshot was drawn over it.
 
 *Agent decision.* The snapshot's bottom corners take the card's radius at the card's size, and the
 value changes at once when a flight starts: a radius does not animate.
+
+## Close all
+
+A press on the close-all button opens `CloseAllAlert` (`close-all.contract`) over the grid and the
+bar (requirements 32 to 35). The alert holds an icon, a title, a message, a stack of cards in a
+frosted bin, the Close button, Cancel, and a note that names the tabs of the other kind, which
+stay.
+
+The cards are copies (`TabFace`) of the cards in view. `pressLeft` reads each card's place with
+`frame()`, keeps the cards that are on the screen (five at most), and hides the real ones while
+their copies are out. A copy moves by a transform, as a tab flight does (see "Tab flights"), so it
+can pass between the bin's opening and the bin's body.
+
+`closing` is the alert's phase:
+
+| Phase | What happens |
+| --- | --- |
+| `lift` | The alert is drawn in its first state and the copies are on their cards. 16 ms later: `in`. |
+| `in` | The grid washes out to white. The words come in from 1.08 times their size. Each copy flies to its place in the stack, turns, scales down in 240 ms, and rises 120 points over the bin. 110 ms later: `rest`. |
+| `rest` | The copies sink into the bin. What is outside the bin below its rim is cut off from now on. 260 ms later: `ready`. |
+| `ready` | The copies are at rest. Their blur shows, and the bin's thick frost fades away over it. |
+| `drop` | Close: the copies fall through the bin's bottom, out of sight. 130 ms later: `hold`. |
+| `hold` | The bin is empty. 150 ms later: `out`. |
+| `out` | The alert leaves: the words grow back to 1.08 times their size and fade, the bin fades, and the grid shows. 220 ms later the tabs close and the alert is gone. |
+| `back` | Cancel: the alert leaves the same way, and each copy rises out of the bin and flies back to its card. 400 ms later the real cards show again. |
+
+The alert keeps the counts and the current tab it opened with, so nothing in it changes while it
+leaves.
+
+`[observed]` The timing comes from the reference recording (60 frames a second), frame by frame
+from the press:
+
+- Frame 1: the cards have left their places and the page behind has started to blur. The words
+  are larger than at rest, blurred, and about half opaque.
+- Frames 1 to 7: each card moves to the stack, shrinks and rises about 80 points over the bin.
+  Frames 7 to 18: it sinks into the bin, and by frame 24 it is at rest.
+- Frames 4 to 7: the bin fades in and rises a few points.
+- Frames 1 to 8: the words settle from about 1.08 times their size. The title moves down and the
+  button up, toward the middle of the screen.
+- After the press on the confirm button: the cards fall behind the bin's rim in 5 frames, the empty
+  bin holds for about 10 frames, and the alert leaves in about 8 frames, growing and blurring as
+  the screen behind it sharpens.
+
+`[observed]` On the iPhone 17 Pro Max simulator (iOS 27.2), recorded at 60 frames a second, the
+app's alert moves on every frame. The cards reach the stack in about 6 frames and are at rest in
+about 15. On Close they are behind the rim in about 5 frames, the empty bin holds for about 11, and
+the alert leaves in about 9.
+
+Each of these was tried on the simulator and held the first frames of a step, so it is not in the
+alert:
+
+- `[observed]` A blur of the grid and a blur of the words (`filter`). The iOS host draws a filter
+  as a picture of its box. The grid's picture held the flight for about 100 ms.
+- `[observed]` A keyframe animation for the rise and the sink (`bin-arc`). It held its first frame
+  for about 150 ms. The rise and the sink are two transitions, `in` and `rest`.
+- `[observed]` A blurred shadow on the flying cards. Each card keeps its face's small shadow.
+- `[observed]` A fade of the falling cards. They fall instead, and the bin and the cut hide them.
+- `[observed]` Closing the tabs at the press. Removing their pages stopped the frames for longer
+  than the empty bin's hold. The tabs close when the alert has gone.
+- `[observed]` On iOS a glass or blur view is not drawn while an ancestor's opacity or scale
+  changes. A `backgroundMaterial` wash and a glass bin disappeared at once instead of fading.
+  So the wash is a white fill, the bin is a frosted fill, and no ancestor of the Close button's
+  glass fades or scales. The glass does not scale with the words.
+- `[observed]` A red fill inside a `glassInteractive` box, clipped to the box. Under a finger the
+  fill and the label swelled, and the button's outline did not. The Close button is the
+  platform's `prominent-glass` button, tinted with `color.danger`, and the whole of it swells.
+  It shows only while the alert is at rest (`ready`, `drop`, `hold`). As the alert comes in and
+  leaves, a plain red button of the same shape and label takes its place and fades. Only one of
+  the two shows at a time: the glass tint over the plain red drew it darker (`#c20006` for
+  `#e6000b`).
+- `[observed]` The iOS host draws `backdrop-filter` as the system's light blur, whatever radius is
+  asked, and a blur is not drawn while its box fades. So the blur of the cards in the bin is a box
+  of its own that shows from `ready` to `hold`. It shows at once under the bin's thick frost, and
+  the frost then fades away over 320 ms. When the blur showed with a thin frost and no fade, it
+  came in within one frame. The frost comes back at once when the blur goes.
+- `[observed]` A card is taller than the bin and shrank as it flew. With a rise of 72 points and the
+  cut from `ready`, a card from the grid's lower row hung below the bin's bottom for about 10
+  frames as it came in. The cards now rise 120 points and shrink in 240 ms, and the cut starts at
+  `rest`, when each card is near the stack and inside the bin's walls.
+- `[observed]` The floor shadow showed through the bin's base as the bin faded. Each shadow is cut
+  away where the base covers it (`clip-path`).
+
+*Agent decision.* The bin is a frosted white fill over an ellipse for its opening, close to the
+recording's rendered bin. It has the recording's cup shape: its bottom is 0.78 of its rim's width,
+and its bottom curves as its rim does. A `clip-path` gives the body this outline. Its shadow lies
+on the floor: a dark contact shadow that ends a few points past the base, and a wide soft one,
+each a little to the right of the bin. The body is shaded as a round thing lit from the front left: a soft light
+down its left side, and shade at its right side and its bottom. The lip along the front of the rim
+is a crescent, 4 points deep at the front and none at the ends, with a band of shade under it, so
+no line of the rim ends sharply. The rim's front is the opening's outer edge, so the two meet. From `ready`, the cut
+follows the bin's walls, so a falling card does not show beside the narrow bottom. A card has the
+screen's tall shape, so the stack scales the cards to fit the bin's depth, and the bin is deeper
+than it is wide.
+
+*Agent decision.* `color.danger` is Tailwind's red-600 in Display P3,
+`oklch(57.7% 0.245 27.3)`, which iOS draws as `#e6000b` in a screenshot. The recording's button is
+`#e9002d`; the earlier `#dc2626` was duller. White on it measures 4.9:1 (WCAG 2), more than the
+4.5:1 that text needs.
+
+*Agent decision.* The words are the app's: "Close All Tabs", "Close 3 Tabs", and a note that the
+tabs of the other kind stay open. The note shows only when there are such tabs.
+
+*Agent decision.* The alert is a `box` with `role="alertdialog"` and `aria-modal`, and not a
+`dialog`: a native alert has no room for the cards. The grid and the bar are `inert` while it
+shows, so a screen reader reaches only the alert. On the web, Escape does not close it.
 
 ## Tab pager
 

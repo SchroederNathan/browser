@@ -161,20 +161,67 @@ test "the control above the grid pages between private tabs and tabs"
   clock settle
   expect state privatePage == false
 
-test "closing all tabs asks first"
+test "closing all tabs asks first, and the cards in view fly into the bin"
   tap "bar-left"
   clock +400
   clock settle
   tap "bar-left"
-  clock settle
+  expect state closing == "lift"
+  expect state binCards.length == 1
+  expect text "close-all-title" == "Close Tab"
+  clock +100
+  expect state closing == "in"
   tap "close-all-cancel"
+  expect state closing == "back"
   expect state tabs.length == 1
+  clock +500
+  expect state closing == "none"
+  expect tree missing "close-all"
   tap "bar-left"
-  clock settle
-  tap "close-all-confirm"
+  clock +100
+  // As the alert comes in, its plain button stands in for the glass one, and closes the tabs.
+  tap "close-all-stand-in"
+  expect state closing == "drop"
+  clock +200
+  expect state closing == "hold"
+  expect state tabs.length == 1
+  clock +600
+  expect state closing == "none"
   expect state tabs == []
   expect state current == ""
+  expect tree missing "close-all"
   expect text "count" == "0"
+
+test "the close-all alert counts the tabs on the page and names the tabs that stay"
+  tap "bar-left"
+  clock +400
+  clock settle
+  tap "bar-middle"
+  type "address" "example.com"
+  type "address" key "Enter"
+  tap "bar-left"
+  clock +400
+  clock settle
+  tap "private"
+  clock settle
+  tap "bar-middle"
+  type "address" "example.org"
+  type "address" key "Enter"
+  tap "bar-left"
+  clock +400
+  clock settle
+  tap "regular"
+  clock settle
+  tap "bar-left"
+  clock +400
+  expect state closing == "ready"
+  expect text "close-all-title" == "Close All Tabs"
+  expect text "close-all-confirm" == "Close 2 Tabs"
+  expect text "close-all-note" == "Your private tabs stay open."
+  tap "close-all-confirm"
+  clock +600
+  expect state tabs.length == 1
+  expect state tabs.0 .private == true
 
 test "a tab's close button closes it"
   tap "bar-left"
@@ -190,3 +237,14 @@ test "Close Tab in the page menu closes the page and shows the grid"
   expect state tabs == []
   expect state sheet == "none"
   expect state screen == "tabs"
+
+test "the close-all alert shows the cards in view in its bin"
+  tap "bar-left"
+  clock +400
+  clock settle
+  tap "bar-left"
+  clock +800
+  expect state closing == "ready"
+  expect tree has "close-all-bin"
+  expect text "close-all-title" == "Close Tab"
+  expect text "close-all-confirm" == "Close Tab"

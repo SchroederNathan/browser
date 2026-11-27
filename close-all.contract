@@ -1,0 +1,161 @@
+// The alert that asks before the tabs of a page close. The cards of the tabs in view fly from the
+// grid into a stack and sink into a frosted bin. On Close they drop into the bin and the alert
+// leaves; on Cancel they fly back to their places in the grid. @ref LLP 0001#close-all
+use Icon from "./icons.contract"
+use Tab, TabFace from "./tabs.contract"
+use Bare, TypeLg, WashIn, WashOut, ScaleIn, ScaleOut, FadeIn, FadeOut, BinIn, BinOut, ArcRise, ArcSink, CardIn, CardBack, CardHold, CardFall, FrostIn, FrostOut from "./design.contract"
+
+// A card in the stack, and where it was in the grid when the alert opened.
+shape BinCard
+  tab: Tab
+  at: Geometry
+
+// The stack fans its cards: the back one turns to the left, the front one to the right and sits
+// lower. `t` is a card's place in the stack, 0 at the back and 1 at the front.
+fn fanT(i: number, n: number): number = n <= 1 ? 0.5 : i / (n - 1)
+fn fanTurn(i: number, n: number): number = n <= 1 ? 0 : -8 + 11 * fanT(i, n)
+fn fanX(i: number, n: number): number = n <= 1 ? 0 : -20 + 30 * fanT(i, n)
+fn fanY(i: number, n: number): number = n <= 1 ? 0 : 10 * fanT(i, n)
+
+component CloseAllAlert
+  props
+    // "lift": the alert is drawn in its first state, the cards on their places in the grid. "in":
+    // it shows, and the cards fly to the stack and rise over the bin. "rest": the cards sink into
+    // the bin. "ready": they are at rest in it. "drop": they fall into it. "hold": the bin is
+    // empty. "out": the alert leaves after Close. "back": it leaves after Cancel, and the cards fly
+    // back.
+    phase: string
+    cards: BinCard[]
+    current: string
+    private: bool
+    // The tabs on the page, and the tabs of the other kind, which stay.
+    count: number
+    others: number
+    width: number
+    height: number
+    centerX: number
+    safeTop: number
+    safeBottom: number
+    cardWidth: number
+    previewHeight: number
+    confirm: action
+    cancel: action
+  // The bin's size follows the screen's height; the cards take the scale that fits them in it.
+  // The bin is a cup seen from a little above: `binW` across its rim, narrower by `taper` on each
+  // side at its bottom. Its opening is an ellipse 28 points high, and its bottom curves the same way.
+  derive binW = 200
+  derive taper = 22
+  derive binH = max(120, min(232, height - safeTop - safeBottom - 480))
+  // How much of the front card shows above the bin's rim.
+  derive peek = 72
+  // How far a card rises over the bin on its way in. A card is tall, so it rises far enough that
+  // it does not hang below the bin as it comes in.
+  derive lift = 120
+  // From the icon's top to Cancel's bottom: the icon, the title and the message, the stack above
+  // the rim, the bin, the button and Cancel.
+  derive blockH = 350 + binH
+  derive top = max(safeTop + 16, (height - blockH) / 2 - 12)
+  derive rim = top + 214
+  derive binBottom = rim + binH
+  derive cardH = 44 + previewHeight
+  // A card fits in the bin with 16 points to spare at the bottom, and is at most 0.64 of its width.
+  derive stackScale = min((binH + peek - 16) / cardH, 0.64 * binW / cardWidth)
+  derive n = cards.length
+  derive textW = min(width - 64, 320)
+  derive buttonW = min(width - 64, 300)
+  derive leaving = phase == "out" or phase == "back"
+  derive title = count == 1 ? (private ? "Close Private Tab" : "Close Tab") : (private ? "Close All Private Tabs" : "Close All Tabs")
+  derive message = count == 1 ? "This tab closes." : "Every tab on this page closes."
+  derive label = count == 1 ? "Close Tab" : `Close ${count} Tabs`
+  derive note = private ? "Your regular tabs stay open." : "Your private tabs stay open."
+  derive falling = phase == "drop" or phase == "hold" or phase == "out"
+  derive shown = phase == "in" or phase == "rest" or phase == "ready" or phase == "drop" or phase == "hold"
+  // What is outside the bin below its rim is cut off from when the cards start to sink into it,
+  // so no card hangs below the bin's bottom, and a card can fall through the bottom out of sight.
+  // By then each card is near the stack and inside the bin's walls; before, the cards still fly
+  // from places in the grid that the cut would hide.
+  derive cut = phase == "rest" or phase == "ready" or falling
+  derive home = phase == "lift" or phase == "back"
+  derive buttonTop = binBottom + 32
+  derive binL = centerX - binW / 2
+  derive binR = centerX + binW / 2
+  // The body's outline, from the box's top-left corner: the front of the rim, a side, the curved
+  // bottom, the other side. The rim's front is the opening's outer edge, so the two meet exactly.
+  derive bodyPath = `path('M 0 0 A ${binW / 2} 14 0 0 0 ${binW} 0 L ${binW - taper} ${binH - 12} A ${binW / 2 - taper} 12 0 0 1 ${taper} ${binH - 12} Z')`
+  // The lip along the front of the rim: 4 points deep at the front and none at the ends, as a round
+  // rim seen from above is. Under it, a band of shade 12 points deep.
+  derive lipPath = `path('M 0 0 A ${binW / 2} 14 0 0 0 ${binW} 0 A ${binW / 2} 18 0 0 1 0 0 Z')`
+  derive shadePath = `path('M 0 0 A ${binW / 2} 18 0 0 0 ${binW} 0 A ${binW / 2} 30 0 0 1 0 0 Z')`
+  // The floor shadows, cut away where the bin's base covers them, so none shows through the base as
+  // the bin fades. Each outline runs round its box and in along the base: up the walls, and along
+  // the base's curved bottom a point inside it, so no gap shows at the base's edge.
+  derive base = binW - 2 * taper
+  derive contactCut = `path('M 0 0 L ${6 - taper * 16 / (binH - 12)} 0 L 7 16 A ${base / 2 - 1} 11 0 0 0 ${5 + base} 16 L ${6 + base + taper * 16 / (binH - 12)} 0 L ${base + 20} 0 L ${base + 20} 38 L 0 38 Z')`
+  derive ambientCut = `path('M 0 0 L ${122 - base / 2 - taper * 24 / (binH - 12)} 0 L ${123 - base / 2} 24 A ${base / 2 - 1} 11 0 0 0 ${121 + base / 2} 24 L ${122 + base / 2 + taper * 24 / (binH - 12)} 0 L 260 0 L 260 60 L 0 60 Z')`
+  // The cards blur through the bin's body while they rest in it and fall through it. On iOS a blur
+  // is not drawn while its box fades, so it does not fade with the bin: it shows at once under a
+  // thick frost, and the frost then fades to let it through (`FrostIn`, `FrostOut`).
+  derive blurred = phase == "ready" or phase == "drop" or phase == "hold"
+  // Under the cut, a card shows above the rim and inside the bin's walls, and not below its bottom.
+  derive cardCut = `polygon(0px 0px, ${width}px 0px, ${width}px ${rim}px, ${binR}px ${rim}px, ${binR - taper}px ${binBottom - 12}px, ${binL + taper}px ${binBottom - 12}px, ${binL}px ${rim}px, 0px ${rim}px)`
+  view
+    // The app draws this alert, as the cards fly into it: a native alert has no room for them. The
+    // grid and the bar under it are inert while it shows (app.contract).
+    // exact-accept lower-dialog-role
+    box position="absolute" left=0 top=0 width=width height=height role="alertdialog" aria-modal=true aria-label=title testId="close-all"
+      // The grid behind washes out to white. It does not blur: on iOS a filter is drawn as a picture
+      // of its box, and a picture of the grid stopped the frames for about 100 ms.
+      box class=(shown ? WashIn : WashOut) background-color="veil.wash" aria-hidden=true testId="close-all-veil"
+      // The words and the buttons come in from a little larger, and leave the same way.
+      box class=(shown ? ScaleIn : ScaleOut)
+        box position="absolute" left=(centerX - textW / 2) top=top width=textW height=150
+          column class=(shown ? FadeIn : FadeOut) width=textW height=150 align-items="center"
+            box height=32 display="flex" align-items="center"
+              Icon(name="close-all", size=28, color="color.danger", weight=600)
+            text title class=TypeLg color="color.text" text-align="center" margin-top=14 testId="close-all-title"
+            text message font-size=15 line-height="20px" font-weight=500 color="color.text-secondary" text-align="center" margin-top=8 testId="close-all-message"
+            text "This can’t be undone." font-size=15 line-height="20px" font-weight=500 color="color.text-secondary" text-align="center"
+        button press=cancel class=Bare position="absolute" left=(centerX - buttonW / 2) top=(buttonTop + 60) width=buttonW height=44 display="flex" align-items="center" justify-content="center" testId="close-all-cancel"
+          text "Cancel" class=(shown ? FadeIn : FadeOut) font-size=17 font-weight=500 color="color.text-secondary"
+        if others > 0
+          text note class=(shown ? FadeIn : FadeOut) position="absolute" left=(centerX - textW / 2) bottom=(safeBottom + 24) width=textW font-size=12 font-weight=500 color="color.text-secondary" text-align="center" testId="close-all-note"
+      // The Close button is the platform's prominent glass button, tinted with the danger red: the
+      // whole button swells and lights under a finger. It shows while the alert is at rest (`blurred`).
+      // On iOS a glass is not drawn while it or an ancestor fades or scales, so as the alert comes
+      // in and leaves, a plain red button of the same shape stands in its place and fades. The two
+      // change places while the alert is still, and both answer a press. Only one shows at a time:
+      // the glass over the plain red would darken it.
+      button press=confirm class=(shown ? FadeIn : FadeOut) visibility=(phase == "lift" or blurred ? "hidden" : "visible") position="absolute" left=(centerX - buttonW / 2) top=buttonTop width=buttonW height=52 border-radius="radius.full" background-color="color.danger" display="flex" align-items="center" justify-content="center" testId="close-all-stand-in"
+        text label font-family="system-ui" font-size=17 font-weight=400 color="color.on-accent"
+      button appearance="auto" buttonStyle="prominent-glass" accent-color="color.danger" press=confirm visibility=(blurred ? "visible" : "hidden") position="absolute" left=(centerX - buttonW / 2) top=buttonTop width=buttonW height=52 testId="close-all-confirm"
+        text label testId="close-all-label"
+      // The shadow on the floor, two ellipses on the floor's plane around the bin's base. The base
+      // hides their middles, so each is dark out to near the base's edge: a dark contact shadow
+      // that ends a few points past the base, and a wide soft one. The light is from the front
+      // left, so both lie a little to the right and behind.
+      box class=(shown ? BinIn : BinOut) left=(centerX + 8 - 130) top=(binBottom - 36) width=260 height=60 clip-path=ambientCut background-image="radial-gradient(closest-side, bin.shadow-ambient 0%, bin.shadow-ambient 40%, bin.shadow-soft 70%, bin.shadow-clear 100%)" pointer-events="none" aria-hidden=true
+      box class=(shown ? BinIn : BinOut) left=(centerX + 4 - base / 2 - 10) top=(binBottom - 28) width=(base + 20) height=38 clip-path=contactCut background-image="radial-gradient(closest-side, bin.shadow-core 0%, bin.shadow-core 70%, bin.shadow-mid 84%, bin.shadow-clear 100%)" pointer-events="none" aria-hidden=true
+      // The bin's opening, behind the cards: the inside of the back wall, in shade, and its white edge.
+      box class=(shown ? BinIn : BinOut) left=binL top=(rim - 14) width=binW height=28 border-radius="50%" border-width=2 border-style="solid" border-color="bin.lip" background-image="linear-gradient(180deg, bin.rim-deep 0%, bin.rim 100%)" pointer-events="none" aria-hidden=true
+      // The cards. A card is taller than the bin is deep, so what is outside the bin below its rim
+      // is cut off (`cut`), and a card falls through the bin's bottom out of sight.
+      box position="absolute" left=0 top=0 width=width height=height clip-path=(cut ? cardCut : "none") pointer-events="none" aria-hidden=true
+        for c, i in cards key=c.tab.id
+          box class=(phase == "in" ? ArcRise : ArcSink) width=cardWidth height=cardH translate=(phase == "in" ? `0px ${0 - lift}px` : "0px 0px")
+            box class=(falling ? CardFall : CardHold) width=cardWidth height=cardH
+              box class=(phase == "back" ? CardBack : CardIn) width=cardWidth height=cardH
+                translate=(home ? `${c.at.x}px ${c.at.y}px` : `${centerX + fanX(i, n) - cardWidth / 2}px ${rim - peek + fanY(i, n) + cardH * stackScale / 2 - cardH / 2}px`)
+                scale=(home ? 1 : stackScale)
+                rotate=(home ? "0deg" : `${fanTurn(i, n)}deg`)
+                TabFace(tab=c.tab, selected=(c.tab.id == current), width=cardWidth, previewHeight=previewHeight)
+      // The blur of the cards behind the body, in the body's outline.
+      box position="absolute" left=binL top=rim width=binW height=binH clip-path=bodyPath backdrop-filter="blur(12px)" visibility=(blurred ? "visible" : "hidden") pointer-events="none" aria-hidden=true
+      // The bin's body: frosted white over the lower part of the cards, so they show dimly through
+      // it. It is shaded as a round thing lit from the front left is: darker at its right side and at
+      // its bottom, with a soft light down its left. It is a fill and not glass, so it can fade. Over
+      // the blur its frost is thin, so the blurred cards show through it as in the recording.
+      box class=(shown ? BinIn : BinOut) left=binL top=rim width=binW height=binH pointer-events="none" aria-hidden=true testId="close-all-bin"
+        box class=(blurred ? FrostOut : FrostIn) clip-path=bodyPath width=binW height=binH background-image="linear-gradient(180deg, bin.frost-top 0%, bin.frost 45%, bin.frost-bottom 100%)"
+        box position="absolute" left=0 top=0 width=binW height=binH clip-path=bodyPath background-image="linear-gradient(90deg, bin.glint-clear 14%, bin.glint 27%, bin.glint-clear 40%), linear-gradient(90deg, bin.side 0%, bin.side-clear 16%, bin.side-clear 52%, bin.side-deep 100%), linear-gradient(180deg, bin.frost-thin-top 0%, bin.frost-thin 45%, bin.frost-thin-bottom 100%)"
+      box class=(shown ? BinIn : BinOut) left=binL top=rim width=binW height=30 clip-path=shadePath background-image="linear-gradient(180deg, bin.lip-shade 0%, bin.lip-shade 60%, bin.lip-shade-clear 100%)" pointer-events="none" aria-hidden=true
+      box class=(shown ? BinIn : BinOut) left=binL top=rim width=binW height=18 clip-path=lipPath background-color="bin.lip" pointer-events="none" aria-hidden=true
