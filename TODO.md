@@ -23,7 +23,6 @@ While the field holds text, the clear button (`clear`) is in its place.
 
 Design: Paper "03 Page Menu". Code: `sheets.contract`, `MenuSheet`.
 
-- [ ] `menu-find`, Find on Page: search the page text and step through the matches.
 - [ ] `menu-summarize`, Summarize: summarize the page. Decide the model and where it runs first.
 - [ ] `menu-pin`, Pin Tab: keep a tab at the start of the grid. `Tab` (`tabs.contract`) needs a `pinned` field.
 - [ ] `menu-reader`, Reader Mode: show the page's article text only.
@@ -34,6 +33,7 @@ Design: Paper "03 Page Menu". Code: `sheets.contract`, `MenuSheet`.
 - [ ] `menu-settings`, Site Settings: the site's permissions and data.
 
 These page menu controls work now: Back, Forward, Copy Link, Reload, Share, Close Tab.
+On iOS, Find on Page opens the system find navigator for the current tab.
 
 ## Private tabs
 

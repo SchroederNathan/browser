@@ -415,6 +415,14 @@ tab is made, so the frame keeps its page; `navigate` moves it.
 return to the page by more than three seconds on the simulator. The front tab's frame stays shown
 under the grid. Frames of the other tabs are hidden.
 
+### Find on Page
+
+On iOS, Find on Page closes the page menu and opens the current web view’s system find navigator.
+WebKit handles the query, match highlighting and stepping between matches. The app keeps only the
+target tab ID and a request counter, neither persisted. A newly mounted frame takes its current
+counter as a baseline; switching tabs or changing the page insets does not reopen Find. The web
+menu omits Find because the app cannot search arbitrary cross-origin frames there.
+
 ### Page insets
 
 Exact pins a frame's content insets to zero. `modules/apple/PageHatch.swift` gives a page a

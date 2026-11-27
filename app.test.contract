@@ -27,6 +27,21 @@ test "the chevron opens the page menu, and a press beside it closes it"
   expect state sheet == "none"
   expect tree missing "menu-summarize"
 
+test "Find on Page targets the current iOS tab and closes the menu" on ios
+  tap "bar-right"
+  clock settle
+  tap "menu-find"
+  expect state sheet == "none"
+  expect state findTab == "1"
+  expect state findRequest == 1
+
+test "the web page menu omits native Find on Page" on web
+  tap "bar-right"
+  clock settle
+  expect tree has "menu-share"
+  expect tree missing "menu-find"
+  expect state findRequest == 0
+
 test "the address in the page menu turns the menu into the search sheet"
   tap "bar-right"
   clock settle
