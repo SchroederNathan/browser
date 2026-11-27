@@ -20,6 +20,7 @@ test "the clear button empties the field and keeps it focused"
   expect focused "address"
 
 test "the chevron opens the page menu, and a press beside it closes it"
+  expect state tabs.0.desktopSite == false
   tap "bar-right"
   expect state sheet == "menu"
   expect tree has "menu-summarize"
