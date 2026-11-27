@@ -15,7 +15,9 @@ theme
   neutral-800 = #262626  scheme=fixed
   neutral-900 = #171717  scheme=fixed
   neutral-950 = #0a0a0a  scheme=fixed
-  red-600 = #dc2626  scheme=fixed
+  // Tailwind's red-600, oklch(57.7% 0.245 27.3): in Display P3, where iOS draws it as vivid as the
+  // design's red. sRGB hosts draw its nearest sRGB red, #e7000b. White on it measures 4.9:1.
+  red-600 = color(display-p3 0.830 0.140 0.133)  scheme=fixed
   paper-white = #ffffff  scheme=fixed
 
   // Semantic roles
@@ -63,6 +65,32 @@ theme
   field.ring-clear = rgb(163 163 163 / 0)  scheme=fixed
   // The dark wash over the page behind an open sheet.
   scrim.tint = rgb(0 0 0 / 0.32)  scheme=fixed
+  // The close-all alert: the white wash over the grid; the bin's frosted body, its shading, its lip
+  // and the shade under the lip; its opening; and the shadow under it. The Close button is tinted
+  // with `color.danger`.
+  veil.wash = rgb(255 255 255 / 0.97)  scheme=fixed
+  bin.rim = neutral-200
+  bin.rim-deep = neutral-400
+  bin.frost-top = rgb(252 252 254 / 0.88)  scheme=fixed
+  bin.frost = rgb(248 248 251 / 0.92)  scheme=fixed
+  bin.frost-bottom = rgb(230 230 238 / 0.97)  scheme=fixed
+  bin.frost-thin-top = rgb(252 252 254 / 0.1)  scheme=fixed
+  bin.frost-thin = rgb(248 248 251 / 0.15)  scheme=fixed
+  bin.frost-thin-bottom = rgb(230 230 238 / 0.55)  scheme=fixed
+  bin.side = rgb(222 222 232 / 0.5)  scheme=fixed
+  bin.side-deep = rgb(206 206 220 / 0.7)  scheme=fixed
+  bin.side-clear = rgb(222 222 232 / 0)  scheme=fixed
+  bin.glint = rgb(255 255 255 / 0.75)  scheme=fixed
+  bin.glint-clear = rgb(255 255 255 / 0)  scheme=fixed
+  bin.lip = paper-white
+  bin.lip-shade = rgb(214 214 226 / 0.55)  scheme=fixed
+  bin.lip-shade-clear = rgb(214 214 226 / 0)  scheme=fixed
+  // The bin's shadow on the floor: dark where its bottom meets the floor, soft around it.
+  bin.shadow-core = rgb(24 24 40 / 0.3)  scheme=fixed
+  bin.shadow-mid = rgb(24 24 40 / 0.12)  scheme=fixed
+  bin.shadow-ambient = rgb(24 24 40 / 0.11)  scheme=fixed
+  bin.shadow-soft = rgb(24 24 40 / 0.04)  scheme=fixed
+  bin.shadow-clear = rgb(24 24 40 / 0)  scheme=fixed
 
 icons
   // Written by tools/icons.py: an SF Symbol on Apple, the design's own path elsewhere.

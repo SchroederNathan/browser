@@ -277,6 +277,134 @@ style SegmentThumb
   animation="thumb-slide 1s linear both"
   animation-timeline="--pager"
 
+// The close-all alert. Its timing is read frame by frame from the reference recording, at 60
+// frames a second. The grid behind washes out to white in about 250 ms. The words come in from
+// 1.08 times their size and leave the same way in under 200 ms. Each card flies to the stack on
+// the smooth ease-out; on its way it rises 120 points over the bin and then sinks into it. On Close
+// the cards fall into the bin on an ease-in, the empty bin holds for a moment, and the alert
+// leaves. @ref LLP 0001#close-all
+//
+// Each part takes its "In" style while the alert shows and its "Out" style before and after. It is
+// drawn first with "Out", so the change to "In" is its entrance.
+//
+// What the recording shows that the iOS host cannot draw at speed is left out, as each one held
+// the first frames of the flight: a blur of the grid and of the words (a filter is drawn as a
+// picture of its box), and a blurred shadow on the flying cards. On iOS a glass or blur view is
+// not drawn while an ancestor fades or scales. So the wash is a fill and not a material, and no
+// ancestor of the Close button's glass fades or scales: its red fill and its label fade.
+style WashIn
+  position="absolute"
+  left=0
+  top=0
+  width="100%"
+  height="100%"
+  opacity=1
+  transition="opacity 260ms cubic-bezier(0.22, 1, 0.36, 1)"
+
+style WashOut
+  position="absolute"
+  left=0
+  top=0
+  width="100%"
+  height="100%"
+  opacity=0
+  transition="opacity 200ms ease-out"
+
+style ScaleIn
+  position="absolute"
+  left=0
+  top=0
+  width="100%"
+  height="100%"
+  scale=1
+  transition="scale 340ms cubic-bezier(0.22, 1, 0.36, 1)"
+
+style ScaleOut
+  position="absolute"
+  left=0
+  top=0
+  width="100%"
+  height="100%"
+  scale=1.08
+  transition="scale 200ms ease-out"
+
+style FadeIn
+  opacity=1
+  transition="opacity 200ms cubic-bezier(0.22, 1, 0.36, 1)"
+
+style FadeOut
+  opacity=0
+  transition="opacity 160ms ease-out"
+
+// The bin rises 8 points as it fades in, a moment after the cards leave the grid.
+style BinIn
+  position="absolute"
+  opacity=1
+  translate="0px 0px"
+  transition="opacity 200ms cubic-bezier(0.22, 1, 0.36, 1) 50ms, translate 320ms cubic-bezier(0.22, 1, 0.36, 1) 50ms"
+
+// The bin's thick frost. It fades away over the blur of the cards once they rest in the bin. It
+// comes back at once as the alert leaves, in the frame the blur goes, so neither change shows.
+style FrostIn
+  position="absolute"
+  left=0
+  top=0
+  opacity=1
+
+style FrostOut
+  position="absolute"
+  left=0
+  top=0
+  opacity=0
+  transition="opacity 320ms cubic-bezier(0.22, 1, 0.36, 1)"
+
+style BinOut
+  position="absolute"
+  opacity=0
+  translate="0px 8px"
+  transition="opacity 180ms ease-out, translate 200ms ease-out"
+
+// A card's rise over the bin and its sink into it, a box around the card's flight. These are
+// transitions and not keyframes: on iOS a keyframe animation that starts with the flight held its
+// first frame for about 150 ms.
+style ArcRise
+  position="absolute"
+  left=0
+  top=0
+  transition="translate 130ms cubic-bezier(0.22, 1, 0.36, 1)"
+
+style ArcSink
+  position="absolute"
+  left=0
+  top=0
+  transition="translate 220ms cubic-bezier(0.45, 0, 0.55, 1)"
+
+// A card's flight. Its place, scale and turn are the view's; these give each move its timing. A
+// flying card has no shadow of its own beyond its face's: on iOS a blurred shadow on four large
+// moving cards held the first frames of the flight.
+// A card shrinks in 240 ms and reaches its place in 340: a tall card from the bottom of the grid
+// is small before it is near the bin, so it does not hang below the bin.
+style CardIn
+  transform-origin="50% 50%"
+  border-radius="radius.xl"
+  transition="translate 340ms cubic-bezier(0.22, 1, 0.36, 1), scale 240ms cubic-bezier(0.22, 1, 0.36, 1), rotate 340ms cubic-bezier(0.22, 1, 0.36, 1)"
+
+style CardBack
+  transform-origin="50% 50%"
+  border-radius="radius.xl"
+  transition="translate 380ms cubic-bezier(0.22, 1, 0.36, 1), scale 380ms cubic-bezier(0.22, 1, 0.36, 1), rotate 380ms cubic-bezier(0.22, 1, 0.36, 1)"
+
+// The fall into the bin, a box of its own around the card. The card falls through the bin's
+// bottom, where the view cuts it off, so none of it shows when the bin fades. It moves and does
+// not fade: a fade of a picture this large is costly on iOS. The part above the rim is gone in
+// about 100 ms, as in the recording.
+style CardHold
+  translate="0px 0px"
+
+style CardFall
+  translate="0px 340px"
+  transition="translate 220ms cubic-bezier(0.4, 0, 1, 1)"
+
 // A tab's small card in the tabs button. The card casts the shadow and its face clips the
 // snapshot, so the shadow is not clipped with it. The shadow and the hairline ring keep a white
 // snapshot readable over a white page. @ref LLP 0001#tabs-button
