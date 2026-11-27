@@ -114,6 +114,9 @@ component MenuSheet
   props
     closeTab: action
     sharePage: action
+    canRequestDesktop: bool
+    desktopSite: bool
+    toggleDesktopSite: action
     later: action
   view
     column gap=18 testId="menu-sheet"
@@ -123,7 +126,7 @@ component MenuSheet
         MenuTile(icon="sparkles", label="Summarize", press=later, id="menu-summarize")
         MenuTile(icon="pin", label="Pin Tab", press=later, id="menu-pin")
         MenuTile(icon="share", label="Share", press=sharePage, id="menu-share")
-      // TODO(TODO.md#page-menu): Reader Mode, Translate, Page Zoom and Request Desktop Site do nothing yet.
+      // TODO(TODO.md#page-menu): Reader Mode, Translate and Page Zoom do nothing yet.
       column flex-shrink=0 class=Group
         MenuRow(icon="reader", label="Reader Mode", last=false, danger=false, press=later, id="menu-reader")
         MenuRow(icon="globe", label="Translate", last=false, danger=false, press=later, id="menu-translate")
@@ -139,7 +142,8 @@ component MenuSheet
             box width=1 height=18 background-color="color.border"
             button press=later class=Bare width=40 height=36 display="flex" align-items="center" justify-content="center" aria-label="Zoom In" testId="menu-zoom-in"
               Icon(name="plus", size=14, color="color.text", weight=600)
-        MenuRow(icon="desktop", label="Request Desktop Site", last=true, danger=false, press=later, id="menu-desktop")
+        if canRequestDesktop
+          MenuRow(icon="desktop", label=(desktopSite ? "Request Mobile Site" : "Request Desktop Site"), last=true, danger=false, press=toggleDesktopSite, id="menu-desktop")
       column flex-shrink=0 class=Group
         // TODO(TODO.md#page-menu): Site Settings does nothing yet.
         MenuRow(icon="sliders", label="Site Settings", last=false, danger=false, press=later, id="menu-settings")

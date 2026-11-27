@@ -415,6 +415,13 @@ tab is made, so the frame keeps its page; `navigate` moves it.
 return to the page by more than three seconds on the simulator. The front tab's frame stays shown
 under the grid. Frames of the other tabs are hidden.
 
+### Request Desktop Site
+
+On iOS each tab starts in mobile mode. The page menu requests the opposite mode and closes. The
+page hatch sets WebKit's preferred content mode before reloading the current history entry in the
+same web view. Links opened in that tab keep its mode. Other tabs, including private tabs, keep
+their own. The web build omits the control because it cannot choose an iframe's user agent.
+
 ### Page insets
 
 Exact pins a frame's content insets to zero. `modules/apple/PageHatch.swift` gives a page a

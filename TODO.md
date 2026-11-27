@@ -30,10 +30,9 @@ Design: Paper "03 Page Menu". Code: `sheets.contract`, `MenuSheet`.
 - [ ] `menu-translate`, Translate: translate the page. Exact has `@exact/translation`.
 - [ ] `menu-zoom-out`, `menu-zoom-in`, Page Zoom: change the page zoom for the site and show it in `menu-zoom`.
   The readout shows `100%` now. `Tab` needs a `zoom` field. An `iframe` has a `zoom` attribute.
-- [ ] `menu-desktop`, Request Desktop Site: load the page with a desktop user agent.
 - [ ] `menu-settings`, Site Settings: the site's permissions and data.
 
-These page menu controls work now: Back, Forward, Copy Link, Reload, Share, Close Tab.
+These page menu controls work now: Back, Forward, Copy Link, Reload, Share, Close Tab, and Request Desktop/Mobile Site (iOS).
 
 ## Private tabs
 
