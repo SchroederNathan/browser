@@ -2,14 +2,18 @@
 // bar's three glass surfaces sit over it and become the search sheet, the page menu and the tab
 // grid's controls. @ref LLP 0001
 use Icon from "./icons.contract"
+use zoomSite, zoomFor, saveZoom from "./zoom.contract"
 use hostOf, isAddress, addressOf, shortAddress from "./address.contract"
-use Tab, TabPage, newTab from "./tabs.contract"
+use Tab, TabPage, TabCard, newTab from "./tabs.contract"
 use SheetField, SearchSheet, MenuSheet from "./sheets.contract"
 use BinCard, CloseAllAlert from "./close-all.contract"
-use Fly, SheetContent, SheetShell, Fade, BarSurface, chromeSpring, SheetPull, PictureIn, PictureOut, BarFill, AddressHere, AddressAway, AddressIn, AddressOut, BesideLowercase, ScrimIn, ScrimOut, GridScreen, SegmentThumb, ThumbStill, Thumbnail, ThumbnailFace, Bare from "./design.contract"
+use Fly, SheetContent, SheetShell, Fade, BarSurface, chromeSpring, SheetPull, PictureIn, PictureOut, BarFill, AddressHere, AddressAway, AddressIn, AddressOut, BesideLowercase, ScrimIn, ScrimOut, GridScreen, PinchGrid, SegmentThumb, ThumbStill, Thumbnail, ThumbnailFace, Bare from "./design.contract"
 
 font "Inter"
   100 900 = "assets/fonts/InterVariable.ttf"
+
+shape Page
+  platform: string
 
 shape Segment
   x: number
@@ -33,10 +37,15 @@ fn heightOf(text: string): number = match parseNumber(text) { case some(n) => n,
 fn shotPath(id: string, n: number): string = `app:/cache/tab-${id}-${n % 2}.png`
 
 component ExactBrowser
+  resource page = exactPage() as shape Page
   resource viewport = exactViewport() as shape Viewport
 
   state tabs = [newTab("1", "https://expo.dev/", false, 1)]
   state current = "1"
+  state siteZooms: string[] = [] persist
+  state privateZooms: string[] = []
+  state findTab = ""
+  state findRequest = 0
   state nextId = 2
   // What is behind the bar: a page, or the tab grid.
   state screen = "browse"
@@ -65,6 +74,8 @@ component ExactBrowser
   // flies to its card. "lift": it is on its card, and the grid is still shown. "up": it flies to
   // the screen. @ref LLP 0001#tab-flights
   state flight = "none"
+  state pinching = false
+  state nextGridRank = 1
   // Where the snapshot is drawn: its left, its top, and its scale against the screen.
   state flyX = 0
   state flyY = 0
@@ -110,9 +121,13 @@ component ExactBrowser
   derive active = first(tabs.filter(t => t.id == current))
   derive url = match active { case some(t) => t.url, case none => "" }
   derive activePrivate = match active { case some(t) => t.private, case none => privatePage }
+  derive site = zoomSite(url)
+  derive percent = zoomFor(activePrivate ? privateZooms : siteZooms, site)
   derive recent = sortBy(tabs, t => t.seen, "desc")
-  derive regularTabs = tabs.filter(t => not t.private)
-  derive privateTabs = tabs.filter(t => t.private)
+  derive gridOrder = sortBy(tabs, t => t.gridRank, "desc")
+  derive visibleOrder = pinching ? gridOrder.filter(t => t.id == current).concat(gridOrder.filter(t => t.id != current)) : gridOrder
+  derive regularTabs = visibleOrder.filter(t => not t.private)
+  derive privateTabs = visibleOrder.filter(t => t.private)
   derive shownTabs = privatePage ? privateTabs : regularTabs
   derive thumbStretch = 76 * min(pagerFraction, 1 - pagerFraction)
   derive asking = closing != "none"
@@ -174,6 +189,8 @@ component ExactBrowser
   // ms after it starts: `Fly` takes 450 ms.
   task settle when flight == "drop"
     after(30, shrink)
+  task revealPreview when pinching
+    after(30, revealFirstSlot)
   task takeOff when flight == "lift"
     after(30, rise)
   task land when flight == "down" or flight == "up" key=flight
@@ -242,8 +259,27 @@ component ExactBrowser
     current = id
 
   // The bar: each surface has one button, whose job follows the screen.
+  action togglePinch
+    if pinching
+      pinching = false
+    else if not inTabs and not open and flight == "none" and not leaving
+      match active
+        case some(t)
+          pinching = true
+          privatePage = activePrivate
+          pagerStart = activePrivate ? 0 : w
+          captureScreenshot(`frame-${t.id}`, shotPath(t.id, t.shots + 1))
+        case none
+          pinching = false
+  action revealFirstSlot
+    scrollIntoView((activePrivate ? "page-private-top" : "page-regular-top"), block="start", behavior="instant")
   action pressLeft
-    if inTabs
+    if pinching
+      if not inTabs
+        tabs = tabs.map(t => t.id == current ? Tab(t, gridRank=nextGridRank) : t)
+        nextGridRank = nextGridRank + 1
+        screen = "tabs"
+    else if inTabs
       if shownTabs.length > 0 and not asking
         // The cards in view, read where they are drawn now. At most five go into the stack.
         let cards = shownTabs.map(t => BinCard(tab=t, at=frame(`card-${t.id}`)))
@@ -252,9 +288,11 @@ component ExactBrowser
         closeCount = shownTabs.length
         closeOthers = privatePage ? regularTabs.length : privateTabs.length
         closing = "lift"
-    else
+    else if not leaving and not open
       match active
         case some(t)
+          tabs = tabs.map(item => item.id == current ? Tab(item, gridRank=nextGridRank) : item)
+          nextGridRank = nextGridRank + 1
           leaving = true
           captureScreenshot(`frame-${t.id}`, shotPath(t.id, t.shots + 1))
         case none
@@ -268,14 +306,14 @@ component ExactBrowser
       privatePage = activePrivate
       pagerStart = activePrivate ? 0 : w
       flight = "drop"
-      scrollIntoView(`preview-${current}`, block="nearest")
+      scrollIntoView((activePrivate ? "page-private-top" : "page-regular-top"), block="start", behavior="instant")
   action showGrid
     leaving = false
     screen = "tabs"
     privatePage = activePrivate
     pagerStart = activePrivate ? 0 : w
     flight = "drop"
-    scrollIntoView(`preview-${current}`, block="nearest")
+    scrollIntoView((activePrivate ? "page-private-top" : "page-regular-top"), block="start", behavior="instant")
   // The snapshot covers the screen; it goes to its card, where the card is drawn now.
   action shrink
     let card = frame(`preview-${current}`)
@@ -402,12 +440,19 @@ component ExactBrowser
   action reloadPage
     reload(`frame-${current}`)
     sheet = "none"
+  action toggleDesktopSite
+    tabs = tabs.map(t => t.id == current ? Tab(t, desktopSite=not t.desktopSite) : t)
+    sheet = "none"
   action copyLink
     copyText(url)
     haptic("success")
     sheet = "none"
   action sharePage
     share(url=url)
+    sheet = "none"
+  action findOnPage
+    findTab = current
+    findRequest = findRequest + 1
     sheet = "none"
   action closeCurrent
     let rest = recent.filter(t => t.id != current and t.private == activePrivate)
@@ -421,6 +466,18 @@ component ExactBrowser
   // TODO(TODO.md): a control that is designed but does nothing yet.
   action later
     sheet = sheet
+
+  action setZoom(value: number)
+    if site != ""
+      if activePrivate
+        privateZooms = saveZoom(privateZooms, site, max(50, min(200, value)))
+      else
+        siteZooms = saveZoom(siteZooms, site, max(50, min(200, value)))
+
+  task clearPrivateZoom when privateTabs.length == 0 and privateZooms.length > 0
+    after(1, forgetPrivateZoom)
+  action forgetPrivateZoom
+    privateZooms = []
 
   // The tab grid.
   action paged(x: number, y: number)
@@ -489,20 +546,23 @@ component ExactBrowser
       // hidden frame again stalls. @ref LLP 0001#pages
       for t in tabs key=t.id
         iframe t.src id=`frame-${t.id}` hatch="page" data-top=`${viewport.safeAreaTop}` data-home=`${viewport.safeAreaBottom}` data-bar=`${barBottom + 56}` partition=(t.private ? "private" : "persist:browser") testId=`frame-${t.id}` title=t.title
-          position="absolute" left=0 top=0 width=w height=h border="none" display=(t.id == current ? "flex" : "none")
+          data-overview=(t.id == current and (not inTabs or pinching) and not open and not leaving and flight == "none" ? "ready" : "off")
+          data-find=`${t.id == findTab ? findRequest : 0}`
+          position="absolute" left=0 top=0 width="100%" height="100%" zoom=(zoomFor(t.private ? privateZooms : siteZooms, zoomSite(t.url)) / 100) border="none" display=(t.id == current ? "flex" : "none")
           apple.allowsBackForwardNavigationGestures=true
+          data-desktop=(t.desktopSite ? "true" : "false")
           navigate=started(t.id) currententrychange=moved(t.id) navigatesuccess=arrived(t.id) capture=captured(t.id) newwindow=asked
 
       if not inTabs and current == ""
         box position="absolute" left=0 top=0 width=w height=h background-color="color.surface"
 
-      if inTabs
-        column position="absolute" left=0 top=0 width=w height=h background-color="color.surface" color-scheme="light" timeline-scope="--pager" inert=asking class=GridScreen testId="grid"
+      if inTabs or pinching
+        column position="absolute" left=0 top=0 width=w height=h background-color="color.surface" color-scheme="light" timeline-scope="--pager" inert=asking class=(pinching ? PinchGrid : GridScreen) testId="grid"
           // Private tabs and regular tabs are two pages: a swipe, or a press on the control,
           // goes between them. @ref LLP 0001#tab-pager
           scroll id="pager" position="absolute" left=0 top=0 width=w height=h display="flex" flex-direction="row" overflow-x="scroll" overflow-y="hidden" scroll-snap-type="x mandatory" scrollbar-width="none" scroll-timeline="--pager x" scrollLeft=pagerStart scroll=paged testId="pager"
-            TabPage(id="page-private", tabs=privateTabs, current=current, empty="No private tabs", width=w, height=h, top=gridTop, columns=columns, cardWidth=cardW, previewHeight=previewH, hingeGap=hingeGap, away=awayIds, open=openTab, close=closeTab)
-            TabPage(id="page-regular", tabs=regularTabs, current=current, empty="No tabs", width=w, height=h, top=gridTop, columns=columns, cardWidth=cardW, previewHeight=previewH, hingeGap=hingeGap, away=awayIds, open=openTab, close=closeTab)
+            TabPage(id="page-private", tabs=privateTabs, current=current, landing=(pinching and activePrivate), still=viewport.prefersReducedMotion, empty="No private tabs", width=w, height=h, top=gridTop, columns=columns, cardWidth=cardW, previewHeight=previewH, hingeGap=hingeGap, away=awayIds, open=openTab, close=closeTab)
+            TabPage(id="page-regular", tabs=regularTabs, current=current, landing=(pinching and not activePrivate), still=viewport.prefersReducedMotion, empty="No tabs", width=w, height=h, top=gridTop, columns=columns, cardWidth=cardW, previewHeight=previewH, hingeGap=hingeGap, away=awayIds, open=openTab, close=closeTab)
           // The control is 156 by 48 with its 4-point padding inside, so the thumb (72 by 40) has 4
           // points on every side.
           row position="absolute" left=((w - 156) / 2) top=(gridInsetTop + 4) width=156 height=48 box-sizing="border-box" padding=4 gap=4 align-items="center" border-radius="radius.full" background-color="color.surface-raised"
@@ -512,6 +572,15 @@ component ExactBrowser
             button press=showRegular class=Bare position="relative" width=72 height=44 margin="-2px 0px" display="flex" align-items="center" justify-content="center" border-radius="radius.full" aria-label=`${regularTabs.length} ${regularTabs.length == 1 ? "tab" : "tabs"}` aria-pressed=(not privatePage) testId="regular"
               row min-width=22 height=22 padding-left=3 padding-right=3 align-items="center" justify-content="center" border-radius=7 border-width=2 border-style="solid" border-color=(privatePage ? "color.text-secondary" : "color.text")
                 text `${regularTabs.length}` font-size=12 font-weight=700 color=(privatePage ? "color.text-secondary" : "color.text") testId="count"
+
+      box hatch="pinch-stage" press=togglePinch position="absolute" left=0 top=0 width=w height=h pointer-events="none" aria-hidden=true
+        if (not inTabs or pinching) and not viewport.prefersReducedMotion
+          match active
+            case some(t)
+              box position="absolute" left=(0 - w) top=0 width=cardW inert=true color-scheme="light"
+                TabCard(tab=t, faceId="flight", away=false, selected=true, width=cardW, previewHeight=previewH, open=openTab, close=closeTab)
+            case none
+              box display="none"
 
       // A page's snapshot on its way between the screen and its card. It is drawn here, under the
       // bar, and moves by a transform, so the bar stays over it. @ref LLP 0001#tab-flights
@@ -554,7 +623,7 @@ component ExactBrowser
                   SearchSheet(recents=recents, icons=icons, pick=pick, fill=fill)
               else
                 scroll class=SheetContent flex=1 min-height=0 scroll=listScrolled overflow-y=(sheetTall or not sheetTaller ? "scroll" : "hidden") touch-action=(listTop ? "pan-down" : "pan-y") padding-left="space-4" padding-right="space-4" padding-bottom=(viewport.safeAreaBottom + 16) testId="sheet-scroll"
-                  MenuSheet(closeTab=closeCurrent, sharePage=sharePage, later=later)
+                  MenuSheet(closeTab=closeCurrent, sharePage=sharePage, canFind=(page.platform == "ios" and current != ""), findOnPage=findOnPage, canRequestDesktop=(page.platform == "ios"), desktopSite=(match active { case some(t) => t.desktopSite, case none => false }), toggleDesktopSite=toggleDesktopSite, later=later, percent=percent, site=site, setZoom=setZoom)
           else
             button press=pressMiddle class=Bare position="absolute" left=0 top=0 width=midW height=sideSize aria-label=(inTabs ? "New Tab" : `Address, ${hostOf(url)}`) inert=asking testId="bar-middle"
           // The address: centred in the pill and in the page menu's top row, and on its way to the
@@ -571,7 +640,7 @@ component ExactBrowser
 
       column class=BarSurface -exact-layout-transition=chromeSpring(viewport.prefersReducedMotion, open) color-scheme="light" position="absolute" left=leftX bottom=sideBottom width=sideSize height=sideSize border-radius=(sideSize / 2) overflow="clip" -exact-glass-tint=(inTabs ? "glass.control" : "transparent") testId="bar-left-surface"
         box class=BarFill background-color="color.surface-raised" opacity=(inTabs ? 0.7 : 0)
-        button press=pressLeft class=Bare position="absolute" left=0 top=0 width=sideSize height=sideSize aria-label=(inTabs ? "Close All Tabs" : "Tabs") inert=(open or asking) testId="bar-left"
+        button press=pressLeft hatch="open-tabs" class=Bare position="absolute" left=0 top=0 width=sideSize height=sideSize aria-label=(inTabs ? "Close All Tabs" : "Tabs") inert=(open or asking) testId="bar-left"
           box class=(inTabs ? PictureOut : PictureIn)
             // The two most recent tabs, the front one on top.
             box width=26 height=26 position="relative"

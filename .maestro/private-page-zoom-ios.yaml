@@ -1,0 +1,24 @@
+appId: com.nate.exactbrowser
+---
+- launchApp:
+    clearState: true
+- tapOn: 'Page Menu'
+- tapOn: 'Zoom In'
+- assertVisible: '125%'
+- tapOn:
+    point: '50%,8%'
+- tapOn: 'Tabs'
+- tapOn: 'Private Tabs'
+- tapOn: 'New Tab'
+- inputText: 'expo.dev'
+- pressKey: Enter
+- tapOn: 'Page Menu'
+- assertVisible: '100%'
+- tapOn: 'Zoom Out'
+- assertVisible: '75%'
+- tapOn: 'Close Tab'
+- tapOn: 'New Tab'
+- inputText: 'expo.dev'
+- pressKey: Enter
+- tapOn: 'Page Menu'
+- assertVisible: '100%'

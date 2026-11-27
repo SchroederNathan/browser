@@ -1,0 +1,31 @@
+test "request desktop and mobile versions of the current page"
+  tap "bar-middle"
+  type "address" "FIXTURE_ORIGIN/first"
+  type "address" key "Enter"
+  clock until state tabs.0.title == "/first mobile" within 15000
+  tap "bar-middle"
+  type "address" "FIXTURE_ORIGIN/second"
+  type "address" key "Enter"
+  clock until state tabs.0.title == "/second mobile" within 15000
+  tap "bar-right"
+  clock settle
+  tap "menu-desktop"
+  expect state sheet == "none"
+  clock until state tabs.0.title == "/second desktop" within 15000
+  tap "bar-left"
+  clock +400
+  clock settle
+  tap "bar-middle"
+  type "address" "FIXTURE_ORIGIN/other"
+  type "address" key "Enter"
+  clock until state tabs.1.title == "/other mobile" within 15000
+  tap "bar-right"
+  clock settle
+  expect text "menu-desktop" == "Request Desktop Site"
+  tap "menu-close-tab"
+  tap "bar-right"
+  clock settle
+  expect text "menu-desktop" == "Request Mobile Site"
+  tap "menu-desktop"
+  clock until state tabs.0.title == "/second mobile" within 15000
+  expect state tabs.0.canGoBack == true

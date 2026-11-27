@@ -1,0 +1,6 @@
+fn firstPart(value: string, separator: string): string = match first(value.split(separator)) { case some(part) => part, case none => "" }
+fn zoomSite(url: string): string = zoomAuthority(url.startsWith("https://") ? url.slice(8) : url.startsWith("http://") ? url.slice(7) : "")
+fn zoomAuthority(value: string): string = match firstPart(firstPart(firstPart(value, "/"), "?"), "#").split("@").at(-1) { case some(host) => host.toLowerCase(), case none => "" }
+fn withoutSite(saved: string[], site: string): string[] = saved.filter(entry => not entry.startsWith(`${site} `))
+fn zoomFor(saved: string[], site: string): number = match first(saved.filter(entry => entry.startsWith(`${site} `))) { case some(entry) => match parseNumber(entry.slice(site.length + 1)) { case some(percent) => percent, case none => 100 }, case none => 100 }
+fn saveZoom(saved: string[], site: string, percent: number): string[] = percent == 100 ? withoutSite(saved, site) : [`${site} ${percent}`].concat(withoutSite(saved, site))

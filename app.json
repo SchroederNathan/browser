@@ -36,6 +36,12 @@
     "page": [
       "ios",
       "web"
+    ],
+    "pinch-stage": ["ios"],
+    "pinch-face": ["ios"],
+    "pinch-target": ["ios"],
+    "open-tabs": [
+      "ios"
     ]
   },
   "verify": {
@@ -89,7 +95,10 @@
   },
   "data": [
     "bar",
+    "desktop",
+    "find",
     "home",
+    "overview",
     "top"
   ]
 }

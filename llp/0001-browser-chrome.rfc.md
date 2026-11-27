@@ -417,6 +417,28 @@ tab is made, so the frame keeps its page; `navigate` moves it.
 return to the page by more than three seconds on the simulator. The front tab's frame stays shown
 under the grid. Frames of the other tabs are hidden.
 
+### Page zoom
+
+Page Zoom changes the frame, not the browser controls. The page menu offers 50–200% in
+25-point steps. Regular tabs remember zoom by HTTP(S) host (including any explicit port),
+across paths, tabs, and launches. Private tabs share a separate in-memory preference until the
+last private tab closes. Site Settings can remove the preference, returning that site to 100%.
+
+### Find on Page
+
+On iOS, Find on Page closes the page menu and opens the current web view’s system find navigator.
+WebKit handles the query, match highlighting and stepping between matches. The app keeps only the
+target tab ID and a request counter, neither persisted. A newly mounted frame takes its current
+counter as a baseline; switching tabs or changing the page insets does not reopen Find. The web
+menu omits Find because the app cannot search arbitrary cross-origin frames there.
+
+### Request Desktop Site
+
+On iOS each tab starts in mobile mode. The page menu requests the opposite mode and closes. The
+page hatch sets WebKit's preferred content mode before reloading the current history entry in the
+same web view. Links opened in that tab keep its mode. Other tabs, including private tabs, keep
+their own. The web build omits the control because it cannot choose an iframe's user agent.
+
 ### Page insets
 
 Exact pins a frame's content insets to zero. `modules/apple/PageHatch.swift` gives a page a
@@ -467,7 +489,20 @@ starts over its page. A press on the pill or the chevron does nothing while the 
 for the snapshot: `[observed]` on the web host that press opened a sheet over the grid that was
 about to show, and an address entered there left the grid over the page.
 
-- To the grid: the tabs button asks for a snapshot of the page (`captureScreenshot`). The snapshot
+- On iOS, pinching inward at minimum zoom lifts a picture of the page over the actual grid.
+  Its scale, position and rotation follow the two fingers; spreading them again reverses the
+  pinch without committing. Only the final scale counts: at 75% or smaller it settles upright
+  into the top-left preview. From the first visible frame of the pinch, that slot is empty:
+  only the moving card represents the active tab. Its page fills the screen at rest, with
+  the title strip above the screen and the selection ring outside its edges. Pinching reveals
+  them by moving the whole card, not by adding chrome at release. Reversing the gesture
+  carries them back out. A non-bouncing spring brings the card upright into the slot.
+  The other cards already occupy their
+  eventual slots. Releasing above that threshold or interrupting the pinch returns to the page without
+  changing the grid order. With Reduce Motion, the snapshot fades and the cards do not slide.
+- To the grid: the tabs button asks for a snapshot of the page (`captureScreenshot`). A pinch
+  that starts on an enlarged page zooms it out instead. On the web, the tabs button remains the
+  way to open the grid; the browser shell cannot observe touches inside a cross-origin page. The snapshot
   is placed over its page ("cover") and the grid shows when its picture is drawn, or after 300 ms
   ("drop"). One frame later the card's place is read with `frame()`, and the snapshot flies to it
   ("down").
@@ -605,6 +640,12 @@ with the screen's ratio a card on the iPhone frame is 472 points high.
 
 The grid has 2 columns in a compact layout, 3 in regular portrait and 4 in regular landscape.
 `[observed]` Paper screens. Across a book fold the grid is two columns on each side of the hinge.
+
+Regular and private tabs each have their own most-recent-first order. The active tab takes the
+first slot when the overview opens. If it already occupies that slot, no other card moves.
+Closing one tab moves the surviving cards into the gap together on the same non-bouncing
+layout spring, including across row boundaries. There is no stagger. With Reduce Motion
+they take their new places immediately, and the pinched page cross-fades over the real grid.
 
 The control above the grid is 4 points below the top inset, and the grid starts 28 points below the
 control. The top inset is the top safe area, and at least 16 points (requirement 20).
