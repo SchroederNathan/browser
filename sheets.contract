@@ -112,6 +112,8 @@ component MenuTile
 
 component MenuSheet
   props
+    canFind: bool
+    findOnPage: action
     closeTab: action
     sharePage: action
     canRequestDesktop: bool
@@ -120,9 +122,10 @@ component MenuSheet
     later: action
   view
     column gap=18 testId="menu-sheet"
-      // TODO(TODO.md#page-menu): Find on Page, Summarize and Pin Tab do nothing yet.
+      // TODO(TODO.md#page-menu): Summarize and Pin Tab do nothing yet.
       row flex-shrink=0 gap="space-3"
-        MenuTile(icon="find", label="Find on Page", press=later, id="menu-find")
+        if canFind
+          MenuTile(icon="find", label="Find on Page", press=findOnPage, id="menu-find")
         MenuTile(icon="sparkles", label="Summarize", press=later, id="menu-summarize")
         MenuTile(icon="pin", label="Pin Tab", press=later, id="menu-pin")
         MenuTile(icon="share", label="Share", press=sharePage, id="menu-share")
