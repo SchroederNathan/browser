@@ -26,7 +26,6 @@ Design: Paper "03 Page Menu". Code: `sheets.contract`, `MenuSheet`.
 - [ ] `menu-find`, Find on Page: search the page text and step through the matches.
 - [ ] `menu-summarize`, Summarize: summarize the page. Decide the model and where it runs first.
 - [ ] `menu-pin`, Pin Tab: keep a tab at the start of the grid. `Tab` (`tabs.contract`) needs a `pinned` field.
-- [ ] `menu-share`, Share: open the system share sheet with the page address. Exact has a `share` command.
 - [ ] `menu-reader`, Reader Mode: show the page's article text only.
 - [ ] `menu-translate`, Translate: translate the page. Exact has `@exact/translation`.
 - [ ] `menu-zoom-out`, `menu-zoom-in`, Page Zoom: change the page zoom for the site and show it in `menu-zoom`.
@@ -34,7 +33,7 @@ Design: Paper "03 Page Menu". Code: `sheets.contract`, `MenuSheet`.
 - [ ] `menu-desktop`, Request Desktop Site: load the page with a desktop user agent.
 - [ ] `menu-settings`, Site Settings: the site's permissions and data.
 
-These page menu controls work now: Back, Forward, Copy Link, Reload, Close Tab.
+These page menu controls work now: Back, Forward, Copy Link, Reload, Share, Close Tab.
 
 ## Private tabs
 
